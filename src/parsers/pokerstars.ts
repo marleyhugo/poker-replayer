@@ -5,6 +5,7 @@ import {
   extractNewCard, addWinner,
 } from './utils';
 
+/** Converte uma linha de ação do PokerStars em RawAction, ou null se não for uma ação. */
 function parseLine(line: string): RawAction | null {
   if (/: folds/.test(line))  return { player: line.split(': folds')[0], type: 'fold' };
   if (/: checks/.test(line)) return { player: line.split(': checks')[0], type: 'check' };
@@ -17,13 +18,14 @@ function parseLine(line: string): RawAction | null {
   return null;
 }
 
+/** Faz o parse de uma mão no formato PokerStars e retorna um ParsedHand normalizado. */
 export function parsePokerStars(text: string): ParsedHand {
   const lines = text.split('\n').map(l => l.trim());
 
   const header = lines[0];
   const id = header.match(/Hand #(\d+)/)?.[1] ?? '0';
-  const sm = header.match(/\(\$?([\d.]+)\/\$?([\d.]+)/);
-  const stakes = sm ? { sb: parseFloat(sm[1]), bb: parseFloat(sm[2]) } : { sb: 0, bb: 0 };
+  const stakesMatch = header.match(/\(\$?([\d.]+)\/\$?([\d.]+)/);
+  const stakes = stakesMatch ? { sb: parseFloat(stakesMatch[1]), bb: parseFloat(stakesMatch[2]) } : { sb: 0, bb: 0 };
   const isTournament = /Tournament/i.test(header);
   const dateStr = header.match(/(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2})/)?.[1];
   const date = dateStr ? new Date(dateStr.replace(/\//g, '-')) : new Date();
@@ -31,7 +33,7 @@ export function parsePokerStars(text: string): ParsedHand {
   const tableLine = lines.find(l => /^Table ['"]/.test(l)) ?? '';
   const dealerSeat = parseInt(tableLine.match(/Seat #(\d+) is the button/)?.[1] ?? '1');
 
-  // Seats — use "in chips" pattern; avoid summary lines
+  // Assentos — usa padrão "in chips" para evitar falsos matches nas linhas de summary
   const players: ParsedHand['players'] = [];
   for (const line of lines) {
     if (line.startsWith('*** SUMMARY')) break;
@@ -39,7 +41,7 @@ export function parsePokerStars(text: string): ParsedHand {
     if (m) players.push({ seat: parseInt(m[1]), name: m[2].trim(), stack: parseAmount(m[3]) });
   }
 
-  // Hole cards (hero + showdown reveals + mucks)
+  // Cartas na mão: herói (dealt to), revelações no showdown e mucks
   const holeCards: ParsedHand['holeCards'] = {};
   let heroName: string | undefined;
   for (const line of lines) {
@@ -58,64 +60,64 @@ export function parsePokerStars(text: string): ParsedHand {
     if (muck && !holeCards[muck[1]]) holeCards[muck[1]] = ['??', '??'];
   }
 
-  // Streets
+  // Streets — percorre as linhas fazendo transições com a máquina de estados
   const streets: ParsedHand['streets'] = [];
-  const sm2 = newStreetMachine();
+  const machine = newStreetMachine();
   let inAction = false;
 
   for (const line of lines) {
     if (line.startsWith('*** HOLE CARDS ***')) {
-      inAction = true; sm2.started = true; continue;
+      inAction = true; machine.started = true; continue;
     }
     if (line.startsWith('*** FLOP ***')) {
       const board = line.match(/\[(.+?)\]/);
-      transitionStreet(sm2, streets, 'flop', board ? parseCards(board[1]) : []);
+      transitionStreet(machine, streets, 'flop', board ? parseCards(board[1]) : []);
       continue;
     }
     if (line.startsWith('*** TURN ***')) {
       const card = extractNewCard(line);
-      transitionStreet(sm2, streets, 'turn', card ? [...sm2.board, card] : sm2.board);
+      transitionStreet(machine, streets, 'turn', card ? [...machine.board, card] : machine.board);
       continue;
     }
     if (line.startsWith('*** RIVER ***')) {
       const card = extractNewCard(line);
-      transitionStreet(sm2, streets, 'river', card ? [...sm2.board, card] : sm2.board);
+      transitionStreet(machine, streets, 'river', card ? [...machine.board, card] : machine.board);
       continue;
     }
     if (/^\*\*\* SHOW ?DOWN \*\*\*/.test(line)) {
-      flushStreet(sm2, streets);
-      streets.push({ street: 'showdown', board: sm2.board, actions: [] });
+      flushStreet(machine, streets);
+      streets.push({ street: 'showdown', board: machine.board, actions: [] });
       inAction = false;
       continue;
     }
     if (line.startsWith('*** SUMMARY ***')) {
-      if (inAction) flushStreet(sm2, streets);
+      if (inAction) flushStreet(machine, streets);
       break;
     }
 
     if (!inAction) continue;
 
     const sb = line.match(/^(.+): posts small blind \$?([\d,.]+)/);
-    if (sb) { sm2.actions.push({ player: sb[1], type: 'post', amount: parseAmount(sb[2]) }); continue; }
+    if (sb) { machine.actions.push({ player: sb[1], type: 'post', amount: parseAmount(sb[2]) }); continue; }
     const bb = line.match(/^(.+): posts big blind \$?([\d,.]+)/);
-    if (bb) { sm2.actions.push({ player: bb[1], type: 'post', amount: parseAmount(bb[2]) }); continue; }
+    if (bb) { machine.actions.push({ player: bb[1], type: 'post', amount: parseAmount(bb[2]) }); continue; }
     const ante = line.match(/^(.+): posts the ante \$?([\d,.]+)/);
-    if (ante) { sm2.actions.push({ player: ante[1], type: 'post-ante', amount: parseAmount(ante[2]) }); continue; }
+    if (ante) { machine.actions.push({ player: ante[1], type: 'post-ante', amount: parseAmount(ante[2]) }); continue; }
 
     const action = parseLine(line);
-    if (action) sm2.actions.push(action);
+    if (action) machine.actions.push(action);
   }
 
-  // Winners — single pass, deduplication via addWinner
+  // Vencedores — passagem única pela seção SUMMARY, deduplicação via addWinner
   const winners: ParsedHand['winners'] = [];
   let inSummary = false;
   for (const line of lines) {
     if (line.startsWith('*** SUMMARY ***')) { inSummary = true; continue; }
     if (!inSummary) continue;
-    // "PlayerX collected $1.00 from ..."
+    // Ex: "PlayerX collected $1.00 from main pot"
     const col = line.match(/^(.+?) collected \$?([\d,.]+) from/);
     if (col) { addWinner(winners, col[1], parseAmount(col[2])); continue; }
-    // "Seat N: Player collected ($X)" or "showed [...] and won ($X)"
+    // Ex: "Seat N: Player collected ($X)" ou "showed [...] and won ($X)"
     const seat = line.match(/^Seat \d+: (.+?) (?:collected|showed .+ and won) \(\$?([\d,.]+)\)/);
     if (seat) addWinner(winners, seat[1].trim(), parseAmount(seat[2]));
   }

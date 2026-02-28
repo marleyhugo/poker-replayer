@@ -5,12 +5,20 @@ import styles from './PlayerSeat.module.css';
 
 interface PlayerSeatProps {
   player: PlayerState;
-  position: string; // CSS class name for positioning
+  /** Nome da classe CSS de posicionamento (ex: "seat0", "seat3"). */
+  position: string;
+  /** Label de posição de poker (ex: "BTN", "SB", "BB", "UTG", "CO"). */
+  positionLabel?: string;
   showBBUnits: boolean;
   bigBlind: number;
 }
 
-export function PlayerSeat({ player, position, showBBUnits, bigBlind }: PlayerSeatProps) {
+/**
+ * Renderiza o assento de um jogador na mesa: cartas, stack, aposta atual,
+ * indicadores de all-in, vencedor e botão de dealer.
+ */
+export function PlayerSeat({ player, position, positionLabel, showBBUnits, bigBlind }: PlayerSeatProps) {
+  // Compõe as classes CSS dinamicamente com base no estado do jogador
   const classes = [
     styles.seat,
     styles[position],
@@ -40,6 +48,10 @@ export function PlayerSeat({ player, position, showBBUnits, bigBlind }: PlayerSe
 
       <div className={styles.info}>
         <div className={styles.name} title={player.name}>
+          {positionLabel && (
+            <span className={styles.positionLabel}>{positionLabel}</span>
+          )}
+          {/* Trunca nomes longos para não estourar o layout */}
           {player.name.length > 12 ? player.name.slice(0, 11) + '…' : player.name}
         </div>
         <div className={styles.stack}>

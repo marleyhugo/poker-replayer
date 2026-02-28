@@ -228,6 +228,17 @@
 .sidebarItemId     { color: var(--color-text-muted); font-size: 0.7rem; }
 .sidebarItemStack  { color: var(--color-text-dim); font-size: 0.68rem; margin-left: auto; }
 
+.sidebarItemPosition {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: rgba(200, 146, 42, 0.12);
+  border: 1px solid rgba(200, 146, 42, 0.25);
+  border-radius: 3px;
+  padding: 0 4px;
+  letter-spacing: 0.2px;
+}
+
 .sidebarItemResult {
   font-size: 0.68rem;
   font-weight: bold;

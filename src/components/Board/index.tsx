@@ -9,8 +9,12 @@ interface BoardProps {
   bigBlind: number;
 }
 
+/**
+ * Exibe as 5 cartas comunitárias e o pote total.
+ * Slots vazios são renderizados como espaços reservados.
+ */
 export function Board({ cards, pot, showBBUnits, bigBlind }: BoardProps) {
-  const slots = [0, 1, 2, 3, 4];
+  const slots = [0, 1, 2, 3, 4]; // sempre 5 slots (flop + turn + river)
 
   return (
     <div className={styles.boardWrapper}>

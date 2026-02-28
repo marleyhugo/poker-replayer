@@ -10,6 +10,10 @@ interface State {
   error: Error | null;
 }
 
+/**
+ * Captura erros de renderização nos componentes filhos e exibe uma tela de fallback.
+ * O callback `onReset` (opcional) é chamado quando o usuário clica em "Tentar novamente".
+ */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
 

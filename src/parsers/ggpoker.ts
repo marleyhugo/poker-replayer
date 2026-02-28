@@ -5,8 +5,12 @@ import {
   extractNewCard, addWinner,
 } from './utils';
 
+/**
+ * Converte uma linha de ação do GGPoker em RawAction, ou null se não for uma ação.
+ * GGPoker às vezes capitaliza os verbos de ação (Folds, Calls, etc.).
+ */
 function parseLine(line: string): RawAction | null {
-  // Case-insensitive: GGPoker sometimes capitalizes action keywords
+  // Case-insensitive: GGPoker às vezes capitaliza os verbos de ação
   if (/: [Ff]olds/.test(line))  return { player: line.split(/: [Ff]olds/)[0], type: 'fold' };
   if (/: [Cc]hecks/.test(line)) return { player: line.split(/: [Cc]hecks/)[0], type: 'check' };
   const call  = line.match(/^(.+): [Cc]alls \$?([\d,.]+)/);
@@ -20,13 +24,14 @@ function parseLine(line: string): RawAction | null {
   return null;
 }
 
+/** Faz o parse de uma mão no formato GGPoker/Natural8 e retorna um ParsedHand normalizado. */
 export function parseGGPoker(text: string): ParsedHand {
   const lines = text.split('\n').map(l => l.trim());
 
   const header = lines[0];
   const id = header.match(/Hand #(\w+)/)?.[1] ?? '0';
-  const sm = header.match(/\(\$?([\d.]+)\/\$?([\d.]+)\)/);
-  const stakes = sm ? { sb: parseFloat(sm[1]), bb: parseFloat(sm[2]) } : { sb: 0, bb: 0 };
+  const stakesMatch = header.match(/\(\$?([\d.]+)\/\$?([\d.]+)\)/);
+  const stakes = stakesMatch ? { sb: parseFloat(stakesMatch[1]), bb: parseFloat(stakesMatch[2]) } : { sb: 0, bb: 0 };
   const isTournament = /Tournament/i.test(header);
   const dateStr = header.match(/(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2})/)?.[1];
   const date = dateStr ? new Date(dateStr.replace(/\//g, '-')) : new Date();
@@ -34,13 +39,12 @@ export function parseGGPoker(text: string): ParsedHand {
   const tableLine = lines.find(l => /^Table ['"]/.test(l)) ?? '';
   const dealerSeat = parseInt(tableLine.match(/Seat #?(\d+) is the button/)?.[1] ?? '1');
 
-  // Seats — single pattern handles both "in chips" and bare amount
-  // Use "in chips" form exclusively to avoid false matches; fall back to bare form
+  // Assentos — tenta primeiro o padrão "in chips"; cai no formato bare amount como fallback
   const seenSeats = new Set<number>();
   const players: ParsedHand['players'] = [];
   for (const line of lines) {
     if (line.startsWith('*** SUMMARY')) break;
-    // Prefer "in chips" form
+    // Padrão preferencial: "Seat 1: PlayerName ($2.00 in chips)"
     const m1 = line.match(/^Seat (\d+): ([^(]+?) \(\$?([\d,.]+) in chips\)/);
     if (m1) {
       const seat = parseInt(m1[1]);
@@ -50,7 +54,7 @@ export function parseGGPoker(text: string): ParsedHand {
       }
       continue;
     }
-    // Bare amount form: "Seat 1: PlayerName ($2.00)"
+    // Fallback: "Seat 1: PlayerName ($2.00)"
     const m2 = line.match(/^Seat (\d+): ([^(]+?) \(\$?([\d,.]+)\)$/);
     if (m2) {
       const seat = parseInt(m2[1]);

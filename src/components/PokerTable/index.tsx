@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState } from '../../types/poker';
+import { computePositions } from '../../utils/positions';
 import { Board } from '../Board';
 import { ChipAnimation } from '../ChipAnimation';
 import { PlayerSeat } from '../PlayerSeat';
@@ -7,6 +8,10 @@ import { formatChips } from '../../utils/format';
 import styles from './PokerTable.module.css';
 import logoSrc from '../../assets/logo.png';
 
+/**
+ * Posições visuais dos assentos na mesa (em % relativo ao container).
+ * seat0 é o assento inferior (herói), os demais seguem sentido horário.
+ */
 const SEAT_POSITIONS = [
   { left: 50, top: 88 },  // seat0
   { left: 22, top: 82 },  // seat1
@@ -20,7 +25,7 @@ const SEAT_POSITIONS = [
   { left: 78, top: 82 },  // seat9
 ];
 
-// Intermediate positions between each seat and center (45% from center toward seat)
+// Posições das apostas: ponto a 45% do caminho entre o centro e cada assento
 const BET_POSITIONS = SEAT_POSITIONS.map(sp => ({
   left: 50 + 0.45 * (sp.left - 50),
   top:  50 + 0.45 * (sp.top  - 50),
@@ -28,12 +33,14 @@ const BET_POSITIONS = SEAT_POSITIONS.map(sp => ({
 
 const CENTER = { left: 50, top: 50 };
 
+/** Representa uma animação de ficha a ser renderizada (do ponto A ao ponto B). */
 interface ChipEvent {
   id: string;
   fromLeft: number;
   fromTop: number;
   toLeft: number;
   toTop: number;
+  /** Valor da ficha (0 para animações de win sem label). */
   amount: number;
 }
 
@@ -44,8 +51,13 @@ interface PokerTableProps {
   bigBlind: number;
 }
 
+/**
+ * Mesa de poker oval com assentos posicionados absolutamente.
+ * Ordena e rotaciona os jogadores para que o herói fique no assento inferior (seat0).
+ * Gerencia animações de fichas ao detectar mudanças de estado entre passos.
+ */
 export function PokerTable({ state, heroName, showBBUnits, bigBlind }: PokerTableProps) {
-  // Sort by seat, then rotate so the hero is always at index 0 (bottom center).
+  // Ordena por assento e rotaciona para o herói ficar sempre no seat0 (base da tela)
   const sortedPlayers = useMemo(() => {
     const sorted = [...state.players].sort((a, b) => a.seat - b.seat);
     if (!heroName) return sorted;
@@ -54,16 +66,24 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind }: PokerTabl
     return [...sorted.slice(heroIdx), ...sorted.slice(0, heroIdx)];
   }, [state.players, heroName]);
 
-  // Map seat number → visual position index (0-based, sorted order)
+  // Mapa de número de assento → índice visual (0-based) para lookup de posição
   const positionMap = useMemo(() => {
     const map = new Map<number, number>();
     sortedPlayers.forEach((p, i) => map.set(p.seat, i));
     return map;
   }, [sortedPlayers]);
 
+  // Mapa de número de assento → label de posição de poker (BTN, SB, BB, UTG, CO...)
+  const pokerPositions = useMemo(() => {
+    const dealer = state.players.find(p => p.isDealer);
+    if (!dealer) return new Map<number, string>();
+    return computePositions(state.players, dealer.seat);
+  }, [state.players]);
+
   const prevStateRef = useRef<GameState | null>(null);
   const [chips, setChips] = useState<ChipEvent[]>([]);
 
+  // Detecta diferenças entre o estado anterior e o atual para disparar animações de ficha
   useEffect(() => {
     const prev = prevStateRef.current;
     if (!prev) { prevStateRef.current = state; return; }
@@ -132,6 +152,7 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind }: PokerTabl
               key={player.seat}
               player={player}
               position={`seat${positionMap.get(player.seat) ?? 0}`}
+              positionLabel={pokerPositions.get(player.seat)}
               showBBUnits={showBBUnits}
               bigBlind={bigBlind}
             />

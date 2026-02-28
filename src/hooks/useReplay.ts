@@ -2,11 +2,18 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { ParsedHand, GameState } from '../types/poker';
 import { buildSteps } from '../engine/gameState';
 
+/**
+ * Gerencia o estado do replay de uma mão de poker.
+ * Gera os passos via `buildSteps` e expõe navegação passo a passo.
+ *
+ * @returns `state` - snapshot atual da mesa (null se não há mão carregada)
+ * @returns `next` / `prev` - avança ou retrocede um passo
+ */
 export function useReplay(hand: ParsedHand | null) {
   const steps = useMemo<GameState[]>(() => (hand ? buildSteps(hand) : []), [hand]);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Reset when hand changes
+  // Reseta para o passo 0 sempre que a mão muda
   useEffect(() => {
     setCurrentStep(0);
   }, [hand]);

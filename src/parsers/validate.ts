@@ -1,5 +1,6 @@
 import type { ParsedHand } from '../types/poker';
 
+/** Erro lançado quando uma mão parseada não passa na validação estrutural. */
 export class HandValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -7,6 +8,11 @@ export class HandValidationError extends Error {
   }
 }
 
+/**
+ * Valida a integridade estrutural de uma mão parseada.
+ * Lança `HandValidationError` se encontrar inconsistências.
+ * Problemas leves (ex: dealer sem assento correspondente) são corrigidos silenciosamente.
+ */
 export function validateHand(hand: ParsedHand): void {
   if (hand.players.length < 2) {
     throw new HandValidationError(
@@ -32,7 +38,7 @@ export function validateHand(hand: ParsedHand): void {
   }
 
   if (!hand.players.some(p => p.seat === hand.dealerSeat)) {
-    // Soft warning: adjust to first player rather than failing
+    // Correção suave: ajusta para o primeiro jogador em vez de lançar erro
     hand.dealerSeat = hand.players[0].seat;
   }
 

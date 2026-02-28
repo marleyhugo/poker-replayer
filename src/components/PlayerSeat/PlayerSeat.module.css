@@ -26,6 +26,23 @@
   white-space: nowrap;
   overflow: hidden;
   max-width: 90px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.positionLabel {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: rgba(200, 146, 42, 0.15);
+  border: 1px solid rgba(200, 146, 42, 0.35);
+  border-radius: 3px;
+  padding: 0 3px;
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+  flex-shrink: 0;
 }
 
 .stack {

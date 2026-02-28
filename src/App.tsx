@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ParsedHand } from './types/poker';
+import { computePositions } from './utils/positions';
 import { useReplay } from './hooks/useReplay';
 import { FileUpload } from './components/FileUpload';
 import { PokerTable } from './components/PokerTable';
@@ -8,6 +9,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Card } from './components/Card';
 import './App.css';
 
+/** Formata os blinds para exibição (ex: "$0.50/$1.00" ou "100/200" em torneios). */
 function formatStakes(stakes: { sb: number; bb: number }, tableType: string): string {
   const fmt = (n: number) => n % 1 === 0 ? String(n) : n.toFixed(2);
   if (tableType === 'tournament') {
@@ -16,6 +18,11 @@ function formatStakes(stakes: { sb: number; bb: number }, tableType: string): st
   return `$${fmt(stakes.sb)}/$${fmt(stakes.bb)}`;
 }
 
+/**
+ * Calcula um resumo da perspectiva do herói em uma mão:
+ * cartas na mão, stack inicial em BBs e resultado líquido em BBs.
+ * Retorna null se não houver herói ou se o BB for zero.
+ */
 function getHeroSummary(h: ParsedHand) {
   if (!h.heroName || h.stakes.bb === 0) return null;
   const heroPlayer = h.players.find(p => p.name === h.heroName);
@@ -35,7 +42,11 @@ function getHeroSummary(h: ParsedHand) {
   const grossWon = h.winners.find(w => w.player === h.heroName)?.amount ?? 0;
   const netBB = (grossWon - totalInvested) / h.stakes.bb;
 
-  return { heroCards, startStackBB, netBB };
+  const positionMap = computePositions(h.players, h.dealerSeat);
+  const heroSeat = h.players.find(p => p.name === h.heroName)?.seat;
+  const heroPosition = heroSeat != null ? positionMap.get(heroSeat) : undefined;
+
+  return { heroCards, startStackBB, netBB, heroPosition };
 }
 
 export default function App() {
@@ -46,18 +57,21 @@ export default function App() {
 
   const handleHandsParsed = (hs: ParsedHand[]) => {
     setHands(hs);
+    // Se só há uma mão, vai direto para o replay sem passar pela lista
     if (hs.length === 1) setHand(hs[0]);
   };
   const handleSelectHand = (h: ParsedHand) => setHand(h);
   const handleBackToList = () => setHand(null);
   const handleReset      = () => { setHands([]); setHand(null); };
 
+  // Navegação entre mãos na sessão atual
   const currentHandIndex = hand ? hands.indexOf(hand) : -1;
   const hasNextHand      = currentHandIndex >= 0 && currentHandIndex < hands.length - 1;
   const hasPrevHand      = currentHandIndex > 0;
   const handleNextHand   = () => { if (hasNextHand) setHand(hands[currentHandIndex + 1]); };
   const handlePrevHand   = () => { if (hasPrevHand) setHand(hands[currentHandIndex - 1]); };
 
+  // Botão "← Mãos" aparece apenas quando há múltiplas mãos e uma está selecionada
   const showBackBtn = hands.length > 1 && hand !== null;
 
   return (
@@ -146,6 +160,9 @@ export default function App() {
                             </div>
                             <div className="sidebarItemRow">
                               <span className="sidebarItemStakes">{formatStakes(h.stakes, h.tableType)}</span>
+                              {hero?.heroPosition && (
+                                <span className="sidebarItemPosition">{hero.heroPosition}</span>
+                              )}
                               {hero && (
                                 <span className="sidebarItemStack">
                                   {hero.startStackBB % 1 === 0 ? hero.startStackBB : hero.startStackBB.toFixed(1)}BB

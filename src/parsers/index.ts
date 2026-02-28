@@ -5,6 +5,10 @@ import { parse888Poker } from './888poker';
 import { parseWPN } from './wpn';
 import { validateHand } from './validate';
 
+/**
+ * Identifica o formato do hand history pelo conteúdo do texto.
+ * Retorna 'unknown' se nenhum formato for reconhecido.
+ */
 export function detectFormat(text: string): string {
   if (text.includes('PokerStars Hand #') || text.includes('PokerStars Game #')) return 'pokerstars';
   if (text.includes('Poker Hand #HD') || text.includes('GGPoker') || text.includes('Natural8')) return 'ggpoker';
@@ -20,6 +24,7 @@ const HAND_SPLIT_PATTERNS: Record<string, RegExp> = {
   wpn:        /(?=^Game #\d+ )/m,
 };
 
+/** Divide um texto com múltiplas mãos em chunks individuais usando o padrão do formato. */
 export function splitHands(text: string, format: string): string[] {
   const sep = HAND_SPLIT_PATTERNS[format];
   if (!sep) return [text];
@@ -33,6 +38,11 @@ const PARSERS: Record<string, (text: string) => ParsedHand> = {
   wpn:        parseWPN,
 };
 
+/**
+ * Processa um texto de hand history (potencialmente com múltiplas mãos),
+ * detecta o formato automaticamente, faz o parse e valida cada mão.
+ * Lança erro se o formato for desconhecido ou nenhuma mão válida for encontrada.
+ */
 export function parseMultipleHands(text: string): ParsedHand[] {
   const trimmed = text.trim();
   if (!trimmed) throw new Error('O texto está vazio. Cole ou carregue um arquivo de hand history.');
@@ -52,7 +62,7 @@ export function parseMultipleHands(text: string): ParsedHand[] {
       validateHand(hand);
       hands.push(hand);
     } catch {
-      // skip invalid chunks silently
+      // Chunks inválidos (mãos incompletas, headers duplicados, etc.) são ignorados silenciosamente
     }
   }
 
@@ -60,6 +70,7 @@ export function parseMultipleHands(text: string): ParsedHand[] {
   return hands;
 }
 
+/** Processa um texto de hand history e retorna apenas a primeira mão encontrada. */
 export function parseHandHistory(text: string): ParsedHand {
   return parseMultipleHands(text)[0];
 }

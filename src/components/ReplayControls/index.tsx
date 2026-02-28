@@ -13,6 +13,10 @@ interface ReplayControlsProps {
   onToggleBBUnits: () => void;
 }
 
+/**
+ * Barra de controles do replay: navegação por passo (◀/▶),
+ * navegação entre mãos e toggle de unidade de exibição (fichas vs BB).
+ */
 export function ReplayControls({
   currentStep,
   totalSteps,

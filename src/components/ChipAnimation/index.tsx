@@ -10,6 +10,11 @@ interface ChipProps {
   onDone: (id: string) => void;
 }
 
+/**
+ * Anima uma ficha se movendo de uma posição para outra na mesa.
+ * Usa CSS custom properties (`--from-*` / `--to-*`) para controlar a trajetória.
+ * Chama `onDone(id)` ao fim da animação para remover o elemento da lista.
+ */
 export function ChipAnimation({ id, fromLeft, fromTop, toLeft, toTop, amount, onDone }: ChipProps) {
   return (
     <div

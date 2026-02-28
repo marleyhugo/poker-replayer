@@ -5,6 +5,7 @@ import {
   extractNewCard, addWinner,
 } from './utils';
 
+/** Converte uma linha de ação do WPN em RawAction, ou null se não for uma ação. */
 function parseLine(line: string): RawAction | null {
   if (/\bfolds\b/i.test(line))  { const m = line.match(/^(.+?)\s+folds/i);  return m ? { player: m[1], type: 'fold'  } : null; }
   if (/\bchecks\b/i.test(line)) { const m = line.match(/^(.+?)\s+checks/i); return m ? { player: m[1], type: 'check' } : null; }
@@ -19,13 +20,14 @@ function parseLine(line: string): RawAction | null {
   return null;
 }
 
+/** Faz o parse de uma mão no formato WPN (Winning Poker Network) e retorna um ParsedHand normalizado. */
 export function parseWPN(text: string): ParsedHand {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
   const header = lines.find(l => /^Game #\d+ -/.test(l)) ?? '';
   const id = header.match(/Game #(\d+)/)?.[1] ?? '0';
-  const sm = header.match(/\(\$?([\d.]+)\/\$?([\d.]+)\)/);
-  const stakes = sm ? { sb: parseFloat(sm[1]), bb: parseFloat(sm[2]) } : { sb: 0, bb: 0 };
+  const stakesMatch = header.match(/\(\$?([\d.]+)\/\$?([\d.]+)\)/);
+  const stakes = stakesMatch ? { sb: parseFloat(stakesMatch[1]), bb: parseFloat(stakesMatch[2]) } : { sb: 0, bb: 0 };
   const isTournament = /Tournament|Sit.n.Go/i.test(text);
   const dateStr = header.match(/(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2})/)?.[1];
   const date = dateStr ? new Date(dateStr.replace(/\//g, '-')) : new Date();
@@ -33,6 +35,7 @@ export function parseWPN(text: string): ParsedHand {
   const dealerLine = lines.find(l => /is the button/i.test(l)) ?? '';
   const dealerSeat = parseInt(dealerLine.match(/Seat (\d+)/)?.[1] ?? '1');
 
+  // Assentos — exclui a linha do dealer button que também começa com "Seat N:"
   const players: ParsedHand['players'] = [];
   for (const line of lines) {
     const m = line.match(/^Seat (\d+):\s+(.+?)\s+\$?([\d,.]+)$/);
@@ -44,6 +47,7 @@ export function parseWPN(text: string): ParsedHand {
   const holeCards: ParsedHand['holeCards'] = {};
   let heroName: string | undefined;
   for (const line of lines) {
+    // WPN mostra as cartas do herói como "PlayerName: [Ah Kd]"
     const m = line.match(/^(.+?):\s+\[(.+?)\]$/);
     if (m) {
       const pair = parseTwoCards(m[2]);
@@ -70,12 +74,14 @@ export function parseWPN(text: string): ParsedHand {
       continue;
     }
     if (/^Turn|^\*\*\* TURN/i.test(line)) {
+      // WPN pode usar "Turn card: [Td]" ou o padrão de dois colchetes "[board] [card]"
       const single = line.match(/Turn card:\s*\[(.+?)\]/i);
       const card = single ? parseCard(single[1]) : extractNewCard(line);
       transitionStreet(machine, streets, 'turn', card ? [...machine.board, card] : machine.board);
       continue;
     }
     if (/^River|^\*\*\* RIVER/i.test(line)) {
+      // Mesmo padrão dual do Turn
       const single = line.match(/River card:\s*\[(.+?)\]/i);
       const card = single ? parseCard(single[1]) : extractNewCard(line);
       transitionStreet(machine, streets, 'river', card ? [...machine.board, card] : machine.board);

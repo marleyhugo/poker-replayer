@@ -11,8 +11,12 @@ function extractNewCard(line: string): string | undefined {
   return cards.length === 1 ? cards[0] : parseCard(line.match(/\[([^\]]+)\]$/)?.[1] ?? '');
 }
 
+/**
+ * Converte uma linha de ação do 888poker em RawAction, ou null se não for uma ação.
+ * O 888poker capitaliza todos os verbos: Folds, Checks, Bets, Calls, Raises, All-In.
+ */
 function parseLine(line: string): RawAction | null {
-  // 888 Poker capitalizes action words: Folds, Checks, Bets, Calls, Raises, All-In
+  // 888 Poker capitaliza os verbos de ação: Folds, Checks, Bets, Calls, Raises, All-In
   if (/\bFolds\b/.test(line))  { const m = line.match(/^(.+?)\s+Folds/);  return m ? { player: m[1], type: 'fold'  } : null; }
   if (/\bChecks\b/.test(line)) { const m = line.match(/^(.+?)\s+Checks/); return m ? { player: m[1], type: 'check' } : null; }
   const call  = line.match(/^(.+?)\s+Calls \$?([\d,.]+)/);
@@ -26,23 +30,25 @@ function parseLine(line: string): RawAction | null {
   return null;
 }
 
+/** Faz o parse de uma mão no formato 888poker/Pacific Poker e retorna um ParsedHand normalizado. */
 export function parse888Poker(text: string): ParsedHand {
   const lines = text.split('\n').map(l => l.trim());
 
   const id = lines[0].match(/Game (\d+)/)?.[1] ?? '0';
-  const sm = lines[1]?.match(/\$?([\d.]+)\/\$?([\d.]+)/);
-  const stakes = sm ? { sb: parseFloat(sm[1]), bb: parseFloat(sm[2]) } : { sb: 0, bb: 0 };
+  // Stakes ficam na segunda linha (ex: "$0.01/$0.02 NL Hold'em")
+  const stakesMatch = lines[1]?.match(/\$?([\d.]+)\/\$?([\d.]+)/);
+  const stakes = stakesMatch ? { sb: parseFloat(stakesMatch[1]), bb: parseFloat(stakesMatch[2]) } : { sb: 0, bb: 0 };
   const isTournament = /Tournament/i.test(text);
 
-  // Date: "*** DD MM YYYY HH:MM:SS"
+  // Data no formato "*** DD MM YYYY HH:MM:SS" (dia/mês/ano, diferente dos outros formatos)
   const dm = text.match(/\*\*\* (\d{2}) (\d{2}) (\d{4}) (\d{2}:\d{2}:\d{2})/);
   const date = dm ? new Date(`${dm[3]}-${dm[2]}-${dm[1]}T${dm[4]}`) : new Date();
 
-  // Dealer: "Dealer: Seat X" or "Seat X is the Dealer"
+  // Dealer: pode aparecer como "Dealer: Seat X" ou "Seat X is the Dealer"
   const dealerLine = lines.find(l => /[Dd]ealer/.test(l) && /[Ss]eat/.test(l)) ?? '';
   const dealerSeat = parseInt(dealerLine.match(/Seat (\d+)/)?.[1] ?? '1');
 
-  // Seats: "Seat 1 - PlayerName ($2.50)"
+  // Assentos no formato "Seat 1 - PlayerName ($2.50)" (usa hífen ou dois-pontos)
   const players: ParsedHand['players'] = [];
   for (const line of lines) {
     const m = line.match(/^Seat (\d+)\s*[-:]\s*(.+?)\s*\(\$?([\d,.]+)\)/);
@@ -71,7 +77,7 @@ export function parse888Poker(text: string): ParsedHand {
   let inAction = false;
 
   for (const line of lines) {
-    // Preflop start markers
+    // Marcadores de início do preflop (varies por versão do software)
     if (/^\*\*\* BLIND|^-- Dealing down|^\*\* Dealing down/.test(line)) {
       inAction = true; machine.started = true; continue;
     }
@@ -103,7 +109,7 @@ export function parse888Poker(text: string): ParsedHand {
 
     if (!inAction) continue;
 
-    // Blinds use bracket notation: "Player posts small blind [$0.01]"
+    // 888poker usa colchetes para o valor dos blinds: "Player posts small blind [$0.01]"
     const sb = line.match(/^(.+?)\s+posts small blind \[\$?([\d,.]+)\]/i);
     if (sb) { machine.actions.push({ player: sb[1], type: 'post', amount: parseAmount(sb[2]) }); continue; }
     const bbl = line.match(/^(.+?)\s+posts big blind \[\$?([\d,.]+)\]/i);

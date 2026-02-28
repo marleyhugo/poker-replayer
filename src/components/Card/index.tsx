@@ -1,7 +1,9 @@
 import styles from './Card.module.css';
 
 interface CardProps {
-  card: string; // e.g. "Ah", "Kd", "??"
+  /** Código da carta (ex: "Ah", "Kd", "??" para carta virada). */
+  card: string;
+  /** Se true, renderiza a versão menor usada nos assentos dos jogadores. */
   small?: boolean;
 }
 
@@ -15,6 +17,10 @@ const SUIT_SYMBOLS: Record<string, string> = {
 const RED_SUITS  = new Set(['h', 'd']);
 const FACE_DOWN  = new Set(['??', '?', 'XX']);
 
+/**
+ * Renderiza uma carta de baralho.
+ * Exibe o verso da carta para códigos desconhecidos ("??", "?", "XX").
+ */
 export function Card({ card, small }: CardProps) {
   if (!card || FACE_DOWN.has(card)) {
     return (

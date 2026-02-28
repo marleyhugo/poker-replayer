@@ -7,6 +7,10 @@ interface FileUploadProps {
   onHandsParsed: (hands: ParsedHand[]) => void;
 }
 
+/**
+ * Área de entrada de hand history: suporta drag-and-drop de arquivo .txt
+ * e colagem de texto diretamente. Chama `onHandsParsed` com as mãos parseadas.
+ */
 export function FileUpload({ onHandsParsed }: FileUploadProps) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,6 +18,7 @@ export function FileUpload({ onHandsParsed }: FileUploadProps) {
   const [pasteText, setPasteText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /** Faz o parse do texto e notifica o pai, ou exibe o erro capturado. */
   const processText = useCallback((text: string) => {
     setError(null);
     try {
@@ -24,6 +29,7 @@ export function FileUpload({ onHandsParsed }: FileUploadProps) {
     }
   }, [onHandsParsed]);
 
+  /** Valida a extensão do arquivo e lê o conteúdo como texto UTF-8. */
   const handleFile = useCallback((file: File) => {
     if (!file.name.endsWith('.txt') && file.type !== 'text/plain') {
       setError('Selecione um arquivo .txt de hand history.');
