@@ -1,26 +1,26 @@
 /* ─── Design tokens ───────────────────────────────────────────────── */
 :root {
-  --color-bg:           #0d1a0d;
-  --color-surface:      rgba(10, 25, 10, 0.88);
-  --color-surface-alt:  rgba(20, 50, 20, 0.7);
-  --color-border:       rgba(80, 140, 80, 0.4);
-  --color-border-focus: rgba(100, 200, 100, 0.7);
+  --color-bg:           #111111;
+  --color-surface:      rgba(25, 22, 18, 0.94);
+  --color-surface-alt:  rgba(40, 35, 25, 0.78);
+  --color-border:       rgba(168, 130, 42, 0.28);
+  --color-border-focus: rgba(200, 165, 60, 0.7);
 
-  --color-text:         #d0e8d0;
-  --color-text-muted:   rgba(200, 230, 200, 0.6);
-  --color-text-dim:     rgba(200, 230, 200, 0.4);
+  --color-text:         #e8dfc0;
+  --color-text-muted:   rgba(232, 218, 180, 0.62);
+  --color-text-dim:     rgba(232, 218, 180, 0.36);
 
-  --color-accent:       #5cb85c;
-  --color-accent-dark:  rgba(60, 130, 60, 0.9);
-  --color-gold:         #f0d060;
-  --color-error:        rgba(80, 10, 10, 0.7);
-  --color-error-border: rgba(180, 60, 60, 0.5);
+  --color-accent:       #c8922a;
+  --color-accent-dark:  rgba(160, 110, 25, 0.88);
+  --color-gold:         #d4a830;
+  --color-error:        rgba(80, 20, 20, 0.75);
+  --color-error-border: rgba(180, 70, 70, 0.55);
   --color-error-text:   #f0a0a0;
 
-  --table-felt-top:    #1a5c2a;
-  --table-felt-bottom: #145220;
-  --table-rail:        #5a3010;
-  --table-rail-dark:   #3a1e08;
+  --table-felt-top:    #c17820;
+  --table-felt-bottom: #7a4808;
+  --table-rail:        #242424;
+  --table-rail-dark:   #181818;
 
   --chip-light:  #f0d060;
   --chip-dark:   #b08820;
@@ -30,9 +30,9 @@
   --card-border:       #aaa;
   --card-red:          #cc2200;
   --card-black:        #111;
-  --card-back-primary: #1a3c6e;
-  --card-back-accent:  #2456a4;
-  --card-back-border:  #0d2040;
+  --card-back-primary: #1a1a2e;
+  --card-back-accent:  #2a2a4a;
+  --card-back-border:  #0d0d20;
 
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;

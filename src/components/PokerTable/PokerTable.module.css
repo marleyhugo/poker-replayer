@@ -10,12 +10,13 @@
   width: 680px;
   height: 380px;
   border-radius: 50%;
-  background: linear-gradient(180deg, var(--table-felt-top) 0%, var(--table-felt-bottom) 100%);
-  border: 10px solid var(--table-rail);
+  background: radial-gradient(ellipse at 50% 38%, #d08c28 0%, #b87018 38%, #9a5e12 65%, #7a4808 100%);
+  border: 16px solid #232323;
   box-shadow:
-    0 0 0 4px var(--table-rail-dark),
-    0 8px 32px rgba(0, 0, 0, 0.7),
-    inset 0 2px 8px rgba(255, 255, 255, 0.08);
+    inset 0 0 0 3px rgba(160, 120, 30, 0.4),
+    0 0 0 2px #181818,
+    0 12px 50px rgba(0, 0, 0, 0.92),
+    inset 0 4px 20px rgba(255, 200, 80, 0.07);
   position: relative;
   display: flex;
   align-items: center;
@@ -88,6 +89,16 @@
 @keyframes betStackIn {
   from { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
   to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
+
+.tableLogo {
+  position: absolute;
+  width: 52%;
+  opacity: 0.22;
+  pointer-events: none;
+  user-select: none;
+  mix-blend-mode: luminosity;
+  z-index: 0;
 }
 
 @media (max-width: 750px) {
