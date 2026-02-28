@@ -1,0 +1,29 @@
+.chip {
+  position: absolute;
+  left: var(--from-left);
+  top:  var(--from-top);
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--chip-light), var(--chip-dark));
+  border: 2px solid var(--chip-border);
+  color: var(--card-black);
+  font-size: 0.48rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+  animation: chipFly 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1;
+}
+
+@keyframes chipFly {
+  0%   { left: var(--from-left); top: var(--from-top); opacity: 1;   }
+  80%  { opacity: 1; }
+  100% { left: var(--to-left);   top: var(--to-top);   opacity: 0.1; }
+}

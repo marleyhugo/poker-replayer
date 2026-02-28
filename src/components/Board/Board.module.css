@@ -1,0 +1,34 @@
+.boardWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pot {
+  background: rgba(0, 0, 0, 0.55);
+  color: #f0d060;
+  font-size: 0.85rem;
+  font-weight: bold;
+  padding: 4px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.cards {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cardSlot {
+  width: 38px;
+  height: 54px;
+}
+
+.emptySlot {
+  width: 38px;
+  height: 54px;
+  border-radius: 5px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.15);
+}
