@@ -72,6 +72,20 @@ export function PlayerSeat({ player, position, positionLabel, showBBUnits, bigBl
       {player.isWinner && (
         <div className={styles.winnerBadge}>WINNER</div>
       )}
+
+      {player.bounty !== undefined && (
+        <div className={styles.bountyBadge}>
+          <svg viewBox="0 0 14 14" width="10" height="10" className={styles.bountyIcon} aria-hidden="true">
+            <circle cx="7" cy="7" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+            <circle cx="7" cy="7" r="1.8" fill="currentColor"/>
+            <line x1="7" y1="1" x2="7" y2="3.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            <line x1="7" y1="10.8" x2="7" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            <line x1="1" y1="7" x2="3.2" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            <line x1="10.8" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          <span>${player.bounty}</span>
+        </div>
+      )}
     </div>
   );
 }

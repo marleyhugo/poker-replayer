@@ -43,7 +43,7 @@ export interface ParsedHand {
   date: Date;
   stakes: { sb: number; bb: number };
   tableType: 'cash' | 'tournament';
-  players: { seat: number; name: string; stack: number }[];
+  players: { seat: number; name: string; stack: number; bounty?: number }[];
   /** Assento do jogador com o botão (dealer). */
   dealerSeat: number;
   /** Nome do herói (perspectiva do jogador local), se disponível. */
@@ -72,6 +72,7 @@ export interface PlayerState {
   isActive: boolean;
   isWinner: boolean;
   isAllIn: boolean;
+  bounty?: number;
 }
 
 /** Snapshot completo da mesa em um passo do replay. */

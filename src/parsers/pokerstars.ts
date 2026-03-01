@@ -37,8 +37,8 @@ export function parsePokerStars(text: string): ParsedHand {
   const players: ParsedHand['players'] = [];
   for (const line of lines) {
     if (line.startsWith('*** SUMMARY')) break;
-    const m = line.match(/^Seat (\d+): ([^(]+?) \(\$?([\d,.]+) in chips\)/);
-    if (m) players.push({ seat: parseInt(m[1]), name: m[2].trim(), stack: parseAmount(m[3]) });
+    const m = line.match(/^Seat (\d+): ([^(]+?) \(\$?([\d,.]+) in chips(?:,\s*\$?([\d,.]+) bounty)?\)/);
+    if (m) players.push({ seat: parseInt(m[1]), name: m[2].trim(), stack: parseAmount(m[3]), bounty: m[4] ? parseAmount(m[4]) : undefined });
   }
 
   // Cartas na mão: herói (dealt to), revelações no showdown e mucks

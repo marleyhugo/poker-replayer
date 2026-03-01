@@ -43,6 +43,7 @@ export function buildSteps(hand: ParsedHand): GameState[] {
     isActive: false,
     isWinner: false,
     isAllIn: false,
+    bounty: p.bounty,
   }));
 
   let pot = 0;
