@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ParsedHand } from './types/poker';
 import { computePositions } from './utils/positions';
 import { useReplay } from './hooks/useReplay';
@@ -68,8 +68,23 @@ export default function App() {
   const currentHandIndex = hand ? hands.indexOf(hand) : -1;
   const hasNextHand      = currentHandIndex >= 0 && currentHandIndex < hands.length - 1;
   const hasPrevHand      = currentHandIndex > 0;
-  const handleNextHand   = () => { if (hasNextHand) setHand(hands[currentHandIndex + 1]); };
-  const handlePrevHand   = () => { if (hasPrevHand) setHand(hands[currentHandIndex - 1]); };
+  const handleNextHand   = useCallback(() => { if (hasNextHand) setHand(hands[currentHandIndex + 1]); }, [hasNextHand, hands, currentHandIndex]);
+  const handlePrevHand   = useCallback(() => { if (hasPrevHand) setHand(hands[currentHandIndex - 1]); }, [hasPrevHand, hands, currentHandIndex]);
+
+  // Navegação por teclado: ← → para ações, ↑ ↓ para mãos
+  useEffect(() => {
+    if (!hand) return;
+    const handleKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight') replay.next();
+      if (e.key === 'ArrowLeft')  replay.prev();
+      if (e.key === 'ArrowDown')  handleNextHand();
+      if (e.key === 'ArrowUp')    handlePrevHand();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [hand, replay.next, replay.prev, handleNextHand, handlePrevHand]);
 
   // Botão "← Mãos" aparece apenas quando há múltiplas mãos e uma está selecionada
   const showBackBtn = hands.length > 1 && hand !== null;

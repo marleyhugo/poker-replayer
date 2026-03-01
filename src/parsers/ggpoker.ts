@@ -117,6 +117,8 @@ export function parseGGPoker(text: string): ParsedHand {
 
     if (!inAction) continue;
 
+    const ante = line.match(/^(.+): posts the ante \$?([\d,.]+)/i);
+    if (ante) { machine.actions.push({ player: ante[1], type: 'post-ante', amount: parseAmount(ante[2]) }); continue; }
     const sb = line.match(/^(.+): posts small blind \$?([\d,.]+)/i);
     if (sb) { machine.actions.push({ player: sb[1], type: 'post', amount: parseAmount(sb[2]) }); continue; }
     const bb = line.match(/^(.+): posts big blind \$?([\d,.]+)/i);
@@ -127,12 +129,26 @@ export function parseGGPoker(text: string): ParsedHand {
   }
 
   const winners: ParsedHand['winners'] = [];
-  let inSummary = false;
+
+  // Pass 1: formato tournament — "player collected X from pot" na seção SHOWDOWN
+  let inShowdown = false;
   for (const line of lines) {
-    if (/\*\*\* SUMMARY \*\*\*/.test(line)) { inSummary = true; continue; }
-    if (!inSummary) continue;
-    const col = line.match(/^(.+?) collected \$?([\d,.]+)/);
+    if (/\*\*\* (?:SHOW ?DOWN) \*\*\*/.test(line)) { inShowdown = true; continue; }
+    if (/\*\*\* SUMMARY \*\*\*/.test(line)) break;
+    if (!inShowdown) continue;
+    const col = line.match(/^(.+?) collected \$?([\d,.]+) from/);
     if (col) addWinner(winners, col[1], parseAmount(col[2]));
+  }
+
+  // Pass 2: fallback para formato cash game — "player collected $X" na SUMMARY
+  if (winners.length === 0) {
+    let inSummary = false;
+    for (const line of lines) {
+      if (/\*\*\* SUMMARY \*\*\*/.test(line)) { inSummary = true; continue; }
+      if (!inSummary) continue;
+      const col = line.match(/^(.+?) collected \$?([\d,.]+)/);
+      if (col) addWinner(winners, col[1], parseAmount(col[2]));
+    }
   }
 
   return { id, format: 'ggpoker', date, stakes, tableType: isTournament ? 'tournament' : 'cash', players, dealerSeat, heroName, holeCards, streets, winners };

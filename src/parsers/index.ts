@@ -11,7 +11,7 @@ import { validateHand } from './validate';
  */
 export function detectFormat(text: string): string {
   if (text.includes('PokerStars Hand #') || text.includes('PokerStars Game #')) return 'pokerstars';
-  if (text.includes('Poker Hand #HD') || text.includes('GGPoker') || text.includes('Natural8')) return 'ggpoker';
+  if (/Poker Hand #[A-Z]{2}/.test(text) || text.includes('GGPoker') || text.includes('Natural8')) return 'ggpoker';
   if (text.includes('888poker Hand History') || text.includes('Pacific Poker')) return '888poker';
   if (/Game #\d+ (starts|-)/.test(text) || text.includes('WPN') || text.includes('Winning Poker')) return 'wpn';
   return 'unknown';
