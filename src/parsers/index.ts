@@ -20,7 +20,7 @@ export function detectFormat(text: string): string {
 const HAND_SPLIT_PATTERNS: Record<string, RegExp> = {
   pokerstars: /(?=^PokerStars (?:Hand|Game) #)/m,
   ggpoker:    /(?=^Poker Hand #)/m,
-  '888poker': /(?=^Game \d+)/m,
+  '888poker': /(?=^(?:#Game No|Game \d+))/m,
   wpn:        /(?=^Game #\d+ )/m,
 };
 
