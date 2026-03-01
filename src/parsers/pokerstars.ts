@@ -95,14 +95,14 @@ export function parsePokerStars(text: string): ParsedHand {
       break;
     }
 
-    if (!inAction) continue;
-
+    const ante = line.match(/^(.+): posts the ante \$?([\d,.]+)/);
+    if (ante) { machine.actions.push({ player: ante[1], type: 'post-ante', amount: parseAmount(ante[2]) }); continue; }
     const sb = line.match(/^(.+): posts small blind \$?([\d,.]+)/);
     if (sb) { machine.actions.push({ player: sb[1], type: 'post', amount: parseAmount(sb[2]) }); continue; }
     const bb = line.match(/^(.+): posts big blind \$?([\d,.]+)/);
     if (bb) { machine.actions.push({ player: bb[1], type: 'post', amount: parseAmount(bb[2]) }); continue; }
-    const ante = line.match(/^(.+): posts the ante \$?([\d,.]+)/);
-    if (ante) { machine.actions.push({ player: ante[1], type: 'post-ante', amount: parseAmount(ante[2]) }); continue; }
+
+    if (!inAction) continue;
 
     const action = parseLine(line);
     if (action) machine.actions.push(action);

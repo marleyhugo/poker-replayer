@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import logoImg from './assets/logo.png';
 import type { ParsedHand } from './types/poker';
 import { computePositions } from './utils/positions';
 import { useReplay } from './hooks/useReplay';
@@ -92,7 +93,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1 className="logo">♠ Poker Replayer</h1>
+        <h1 className="logo">
+          <img src={logoImg} alt="" className="logoImg" aria-hidden="true" />
+          FULL REPLAYER
+        </h1>
         <div className="headerActions">
           {showBackBtn && (
             <button className="backBtn" onClick={handleBackToList}>

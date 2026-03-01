@@ -14,10 +14,19 @@
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 1.4rem;
   font-weight: bold;
   color: var(--color-accent);
   letter-spacing: 1px;
+}
+
+.logoImg {
+  height: 36px;
+  width: auto;
+  display: block;
 }
 
 .resetBtn {

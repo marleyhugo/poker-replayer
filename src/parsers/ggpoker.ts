@@ -30,8 +30,8 @@ export function parseGGPoker(text: string): ParsedHand {
 
   const header = lines[0];
   const id = header.match(/Hand #(\w+)/)?.[1] ?? '0';
-  const stakesMatch = header.match(/\(\$?([\d.]+)\/\$?([\d.]+)\)/);
-  const stakes = stakesMatch ? { sb: parseFloat(stakesMatch[1]), bb: parseFloat(stakesMatch[2]) } : { sb: 0, bb: 0 };
+  const stakesMatch = header.match(/\(\$?([\d.,]+)\/\$?([\d.,]+)\)/);
+  const stakes = stakesMatch ? { sb: parseAmount(stakesMatch[1]), bb: parseAmount(stakesMatch[2]) } : { sb: 0, bb: 0 };
   const isTournament = /Tournament/i.test(header);
   const dateStr = header.match(/(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2})/)?.[1];
   const date = dateStr ? new Date(dateStr.replace(/\//g, '-')) : new Date();
@@ -115,14 +115,14 @@ export function parseGGPoker(text: string): ParsedHand {
       break;
     }
 
-    if (!inAction) continue;
-
     const ante = line.match(/^(.+): posts the ante \$?([\d,.]+)/i);
     if (ante) { machine.actions.push({ player: ante[1], type: 'post-ante', amount: parseAmount(ante[2]) }); continue; }
     const sb = line.match(/^(.+): posts small blind \$?([\d,.]+)/i);
     if (sb) { machine.actions.push({ player: sb[1], type: 'post', amount: parseAmount(sb[2]) }); continue; }
     const bb = line.match(/^(.+): posts big blind \$?([\d,.]+)/i);
     if (bb) { machine.actions.push({ player: bb[1], type: 'post', amount: parseAmount(bb[2]) }); continue; }
+
+    if (!inAction) continue;
 
     const action = parseLine(line);
     if (action) machine.actions.push(action);

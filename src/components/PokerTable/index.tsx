@@ -6,7 +6,7 @@ import { ChipAnimation } from '../ChipAnimation';
 import { PlayerSeat } from '../PlayerSeat';
 import { formatChips } from '../../utils/format';
 import styles from './PokerTable.module.css';
-import logoSrc from '../../assets/logo.png';
+import mesaSvg from '../../assets/mesa.svg';
 
 /**
  * Posições visuais dos assentos na mesa (em % relativo ao container).
@@ -141,7 +141,7 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind }: PokerTabl
     <div className={styles.tableContainer}>
       <div className={styles.tableOuter}>
         <div className={styles.tableInner}>
-          <img src={logoSrc} alt="" className={styles.tableLogo} aria-hidden="true" />
+          <img src={mesaSvg} alt="" className={styles.tableImg} aria-hidden="true" />
           <div className={styles.center}>
             <Board cards={state.board} pot={state.pot} showBBUnits={showBBUnits} bigBlind={bigBlind} />
             <div className={styles.streetBadge}>{state.street.toUpperCase()}</div>
