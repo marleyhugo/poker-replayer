@@ -9,15 +9,19 @@ import styles from './PokerTable.module.css';
 import mesaSvg from '../../assets/mesa.svg';
 
 /** Raios da oval dos assentos (em % do container). */
-const RX = 48;
-const RY = 36;
+const SEAT_RX = 48;
+const SEAT_RY = 41;
 
-/** Gera posições de assento distribuídas simetricamente numa oval para N jogadores. */
-function computeSeatPositions(count: number) {
+/** Raios originais usados para posicionar as fichas de aposta. */
+const BET_RX = 48;
+const BET_RY = 36;
+
+/** Gera posições distribuídas simetricamente numa oval para N jogadores. */
+function computeOvalPositions(count: number, rx: number, ry: number) {
   const step = (2 * Math.PI) / count;
   return Array.from({ length: count }, (_, i) => ({
-    left: 50 - RX * Math.sin(i * step),
-    top:  50 + RY * Math.cos(i * step),
+    left: 50 - rx * Math.sin(i * step),
+    top:  50 + ry * Math.cos(i * step),
   }));
 }
 
@@ -79,8 +83,9 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
   }, [state.players, heroName]);
 
   // Posições calculadas dinamicamente para o número atual de jogadores
-  const seatPositions = useMemo(() => computeSeatPositions(sortedPlayers.length), [sortedPlayers.length]);
-  const betPositions = useMemo(() => computeBetPositions(seatPositions), [seatPositions]);
+  const seatPositions = useMemo(() => computeOvalPositions(sortedPlayers.length, SEAT_RX, SEAT_RY), [sortedPlayers.length]);
+  const betBasePositions = useMemo(() => computeOvalPositions(sortedPlayers.length, BET_RX, BET_RY), [sortedPlayers.length]);
+  const betPositions = useMemo(() => computeBetPositions(betBasePositions), [betBasePositions]);
 
   // Mapa de número de assento → índice visual (0-based) para lookup de posição
   const positionMap = useMemo(() => {
@@ -180,6 +185,7 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
                 positionLabel={pokerPositions.get(player.seat)}
                 showBBUnits={showBBUnits}
                 bigBlind={bigBlind}
+                isHero={player.name === heroName}
               />
             );
           })}

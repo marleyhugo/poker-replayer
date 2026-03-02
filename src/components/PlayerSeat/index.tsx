@@ -13,13 +13,14 @@ interface PlayerSeatProps {
   positionLabel?: string;
   showBBUnits: boolean;
   bigBlind: number;
+  isHero?: boolean;
 }
 
 /**
  * Renderiza o assento de um jogador na mesa: cartas, stack, aposta atual,
  * indicadores de all-in, vencedor e botão de dealer.
  */
-export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigBlind }: PlayerSeatProps) {
+export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigBlind, isHero }: PlayerSeatProps) {
   const classes = [
     styles.seat,
     player.folded ? styles.folded : '',
@@ -35,13 +36,13 @@ export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigB
       <div className={styles.cards}>
         {player.holeCards ? (
           <>
-            <Card card={player.holeCards[0]} small />
-            <Card card={player.holeCards[1]} small />
+            <Card card={player.holeCards[0]} />
+            <Card card={player.holeCards[1]} />
           </>
         ) : (
           <>
-            <Card card="??" small />
-            <Card card="??" small />
+            <Card card="??" />
+            <Card card="??" />
           </>
         )}
       </div>
@@ -53,8 +54,23 @@ export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigB
           )}
           {player.name.length > 12 ? player.name.slice(0, 11) + '…' : player.name}
         </div>
-        <div className={styles.stack}>
-          {formatChips(player.stack, showBBUnits, bigBlind)}
+        <div className={styles.bottomRow}>
+          {player.bounty !== undefined && (
+            <span className={styles.bountyLabel}>
+              <svg viewBox="0 0 14 14" width="8" height="8" className={styles.bountyIcon} aria-hidden="true">
+                <circle cx="7" cy="7" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+                <circle cx="7" cy="7" r="1.8" fill="currentColor"/>
+                <line x1="7" y1="1" x2="7" y2="3.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                <line x1="7" y1="10.8" x2="7" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                <line x1="1" y1="7" x2="3.2" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                <line x1="10.8" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+              ${player.bounty}
+            </span>
+          )}
+          <span className={styles.stack}>
+            {formatChips(player.stack, showBBUnits, bigBlind)}
+          </span>
         </div>
       </div>
 
@@ -64,20 +80,6 @@ export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigB
 
       {player.isWinner && (
         <div className={styles.winnerBadge}>WINNER</div>
-      )}
-
-      {player.bounty !== undefined && (
-        <div className={styles.bountyBadge}>
-          <svg viewBox="0 0 14 14" width="10" height="10" className={styles.bountyIcon} aria-hidden="true">
-            <circle cx="7" cy="7" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.4"/>
-            <circle cx="7" cy="7" r="1.8" fill="currentColor"/>
-            <line x1="7" y1="1" x2="7" y2="3.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-            <line x1="7" y1="10.8" x2="7" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-            <line x1="1" y1="7" x2="3.2" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-            <line x1="10.8" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-          </svg>
-          <span>${player.bounty}</span>
-        </div>
       )}
     </div>
   );

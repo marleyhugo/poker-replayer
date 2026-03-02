@@ -26,10 +26,12 @@
   --chip-dark:   #b08820;
   --chip-border: #7a5810;
 
-  --card-bg:           #fff;
-  --card-border:       #aaa;
-  --card-red:          #cc2200;
-  --card-black:        #111;
+  --card-hearts:       #8B0000;
+  --card-diamonds:     #1C5B99;
+  --card-clubs:        #008000;
+  --card-spades:       #2C2C2C;
+  --card-text:         #ffffff;
+  --card-border:       #555555;
   --card-back-primary: #1a1a2e;
   --card-back-accent:  #2a2a4a;
   --card-back-border:  #0d0d20;
