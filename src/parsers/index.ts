@@ -3,6 +3,8 @@ import { parsePokerStars } from './pokerstars';
 import { parseGGPoker } from './ggpoker';
 import { parse888Poker } from './888poker';
 import { parseWPN } from './wpn';
+import { parseIPoker, splitIPokerGames } from './ipoker';
+import { parsePartyPoker } from './partypoker';
 import { validateHand } from './validate';
 
 /**
@@ -13,7 +15,11 @@ export function detectFormat(text: string): string {
   if (text.includes('PokerStars Hand #') || text.includes('PokerStars Game #')) return 'pokerstars';
   if (/Poker Hand #[A-Z]{2}/.test(text) || text.includes('GGPoker') || text.includes('Natural8')) return 'ggpoker';
   if (text.includes('888poker Hand History') || text.includes('Pacific Poker')) return '888poker';
-  if (/Game #\d+ (starts|-)/.test(text) || text.includes('WPN') || text.includes('Winning Poker')) return 'wpn';
+  if (/Game Hand #\d+/.test(text) || (/Game #\d+ (starts|-)/.test(text)) || text.includes('Winning Poker')) return 'wpn';
+  if (text.includes('<game gamecode=') || text.includes('<gametype>Holdem')) return 'ipoker';
+  if (text.includes('Hand History For Game') || /Tourney Texas Holdem Game Table/i.test(text)) return 'partypoker';
+  // 888poker novo formato (sem header "888poker Hand History")
+  if (text.includes('#Game No')) return '888poker';
   return 'unknown';
 }
 
@@ -21,11 +27,14 @@ const HAND_SPLIT_PATTERNS: Record<string, RegExp> = {
   pokerstars: /(?=^PokerStars (?:Hand|Game) #)/m,
   ggpoker:    /(?=^Poker Hand #)/m,
   '888poker': /(?=^(?:#Game No|Game \d+))/m,
-  wpn:        /(?=^Game #\d+ )/m,
+  wpn:        /(?=^Game (?:Hand )?#\d+)/m,
+  partypoker: /(?=^\*{5} Hand History For Game)/m,
 };
 
 /** Divide um texto com múltiplas mãos em chunks individuais usando o padrão do formato. */
 export function splitHands(text: string, format: string): string[] {
+  // iPoker usa XML, split especial
+  if (format === 'ipoker') return splitIPokerGames(text);
   const sep = HAND_SPLIT_PATTERNS[format];
   if (!sep) return [text];
   return text.split(sep).map(s => s.trim()).filter(Boolean);
@@ -36,6 +45,8 @@ const PARSERS: Record<string, (text: string) => ParsedHand> = {
   ggpoker:    parseGGPoker,
   '888poker': parse888Poker,
   wpn:        parseWPN,
+  ipoker:     parseIPoker,
+  partypoker: parsePartyPoker,
 };
 
 /**
@@ -49,7 +60,7 @@ export function parseMultipleHands(text: string): ParsedHand[] {
 
   const format = detectFormat(trimmed);
   if (format === 'unknown') throw new Error(
-    'Formato não reconhecido. Suportamos: PokerStars, GGPoker, 888 Poker e WPN.'
+    'Formato não reconhecido. Suportamos: PokerStars, GGPoker, 888 Poker, WPN, iPoker e PartyPoker.'
   );
 
   const parser = PARSERS[format];
@@ -75,5 +86,5 @@ export function parseHandHistory(text: string): ParsedHand {
   return parseMultipleHands(text)[0];
 }
 
-export { parsePokerStars, parseGGPoker, parse888Poker, parseWPN };
+export { parsePokerStars, parseGGPoker, parse888Poker, parseWPN, parseIPoker, parsePartyPoker };
 export { validateHand, HandValidationError } from './validate';
