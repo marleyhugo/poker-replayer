@@ -12,6 +12,9 @@ import mesaSvg from '../../assets/mesa.svg';
 const SEAT_RX = 48;
 const SEAT_RY = 41;
 
+/** Offset vertical extra do hero (seat index 0) em relação à oval. */
+const HERO_OFFSET_Y = -5;
+
 /** Raios originais usados para posicionar as fichas de aposta. */
 const BET_RX = 48;
 const BET_RY = 36;
@@ -83,7 +86,12 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
   }, [state.players, heroName]);
 
   // Posições calculadas dinamicamente para o número atual de jogadores
-  const seatPositions = useMemo(() => computeOvalPositions(sortedPlayers.length, SEAT_RX, SEAT_RY), [sortedPlayers.length]);
+  const seatPositions = useMemo(() => {
+    const positions = computeOvalPositions(sortedPlayers.length, SEAT_RX, SEAT_RY);
+    // Afasta o hero (index 0) para baixo sem mover a ficha
+    positions[0] = { ...positions[0], top: positions[0].top + HERO_OFFSET_Y };
+    return positions;
+  }, [sortedPlayers.length]);
   const betBasePositions = useMemo(() => computeOvalPositions(sortedPlayers.length, BET_RX, BET_RY), [sortedPlayers.length]);
   const betPositions = useMemo(() => computeBetPositions(betBasePositions), [betBasePositions]);
 
@@ -170,7 +178,6 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
           </div>
           <div className={styles.center}>
             <Board cards={state.board} pot={state.pot} showBBUnits={showBBUnits} bigBlind={bigBlind} />
-            <div className={styles.streetBadge}>{state.street.toUpperCase()}</div>
           </div>
 
           {sortedPlayers.map(player => {
@@ -220,9 +227,6 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
         </div>
       </div>
 
-      <div className={styles.message} aria-live="polite">
-        {state.message}
-      </div>
     </div>
   );
 }
