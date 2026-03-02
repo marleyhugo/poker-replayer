@@ -76,17 +76,22 @@ export function buildSteps(hand: ParsedHand): GameState[] {
     players.forEach(p => { p.isActive = p.name === name; });
   }
 
-  // Processa antes e blinds silenciosamente antes do primeiro snapshot
+  // Processa antes e blinds silenciosamente antes do primeiro snapshot.
+  // Antes NÃO entram no campo `bet` (que é usado para cálculos de call/raise),
+  // apenas descontam do stack e vão para o pot via `anteBet`.
   const preflopData = hand.streets.find(s => s.street === 'preflop');
   if (preflopData) {
     for (const action of preflopData.actions) {
       if (action.type === 'post-ante') {
         const player = players.find(p => p.name === action.player);
         if (!player) continue;
-        const paid = deduct(player, action.amount ?? 0);
-        pot += paid;
+        const amount = Math.min(action.amount ?? 0, player.stack);
+        player.stack -= amount;
+        player.totalInvested += amount;
+        pot += amount;
         player.betType = 'ante';
-        player.anteBet += paid;
+        player.anteBet += amount;
+        if (player.stack === 0) player.isAllIn = true;
       } else if (action.type === 'post') {
         const player = players.find(p => p.name === action.player);
         if (!player) continue;
@@ -145,11 +150,15 @@ export function buildSteps(hand: ParsedHand): GameState[] {
           break;
         }
         case 'post-ante': {
-          const paid = deduct(player, action.amount ?? 0);
-          pot += paid;
+          // Antes NÃO entram no campo `bet` — só descontam do stack e vão para o pot
+          const amount = Math.min(action.amount ?? 0, player.stack);
+          player.stack -= amount;
+          player.totalInvested += amount;
+          pot += amount;
           player.betType = 'ante';
-          player.anteBet += paid;
-          message = `${action.player} posta ante ${fmtAmount(paid)}`;
+          player.anteBet += amount;
+          if (player.stack === 0) player.isAllIn = true;
+          message = `${action.player} posta ante ${fmtAmount(amount)}`;
           break;
         }
         case 'fold': {

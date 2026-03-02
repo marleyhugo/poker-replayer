@@ -54,6 +54,7 @@ export default function App() {
   const [hands, setHands] = useState<ParsedHand[]>([]);
   const [hand,  setHand]  = useState<ParsedHand | null>(null);
   const [showBBUnits, setShowBBUnits] = useState(false);
+  const [reversed, setReversed] = useState(false);
   const [zoom, setZoom] = useState(1);
   const replay = useReplay(hand);
   const replayRef = useRef<HTMLDivElement>(null);
@@ -81,10 +82,14 @@ export default function App() {
 
   // Navegação entre mãos na sessão atual
   const currentHandIndex = hand ? hands.indexOf(hand) : -1;
-  const hasNextHand      = currentHandIndex >= 0 && currentHandIndex < hands.length - 1;
-  const hasPrevHand      = currentHandIndex > 0;
-  const handleNextHand   = useCallback(() => { if (hasNextHand) setHand(hands[currentHandIndex + 1]); }, [hasNextHand, hands, currentHandIndex]);
-  const handlePrevHand   = useCallback(() => { if (hasPrevHand) setHand(hands[currentHandIndex - 1]); }, [hasPrevHand, hands, currentHandIndex]);
+  const hasNextHand      = reversed
+    ? currentHandIndex > 0
+    : currentHandIndex >= 0 && currentHandIndex < hands.length - 1;
+  const hasPrevHand      = reversed
+    ? currentHandIndex >= 0 && currentHandIndex < hands.length - 1
+    : currentHandIndex > 0;
+  const handleNextHand   = useCallback(() => { if (hasNextHand) setHand(hands[currentHandIndex + (reversed ? -1 : 1)]); }, [hasNextHand, hands, currentHandIndex, reversed]);
+  const handlePrevHand   = useCallback(() => { if (hasPrevHand) setHand(hands[currentHandIndex + (reversed ? 1 : -1)]); }, [hasPrevHand, hands, currentHandIndex, reversed]);
 
   // Navegação por teclado: ← → para ações, ↑ ↓ para mãos
   useEffect(() => {
@@ -140,16 +145,24 @@ export default function App() {
             /* Hand list */
             <div className="handListView">
               <h2 className="handListTitle">
-                {hands.length} {hands.length === 1 ? 'mão encontrada' : 'mãos encontradas'}
+                <span>{hands.length} {hands.length === 1 ? 'mão encontrada' : 'mãos encontradas'}</span>
+                <button
+                  className="sortOrderBtn"
+                  onClick={() => setReversed(r => !r)}
+                  title="Inverter ordem"
+                >
+                  ↑↓
+                </button>
               </h2>
               <ul className="handList">
-                {hands.map((h, i) => {
+                {(reversed ? [...hands].reverse() : hands).map((h, i) => {
+                  const originalIndex = reversed ? hands.length - 1 - i : i;
                   const heroCards = h.heroName ? h.holeCards[h.heroName] : undefined;
                   return (
-                    <li key={`${h.id}-${i}`}>
+                    <li key={`${h.id}-${originalIndex}`}>
                       <button className="handListItem" onClick={() => handleSelectHand(h)}>
                         <span className="formatBadge">{h.format}</span>
-                        <span className="handId">#{i + 1}</span>
+                        <span className="handId">#{originalIndex + 1}</span>
                         {heroCards && (
                           <span className="handHeroCards">
                             <Card card={heroCards[0]} small />
@@ -179,19 +192,29 @@ export default function App() {
                     <span className="stakes">{formatStakes(hand.stakes, hand.tableType)}</span>
                   </div>
                   <aside className="sidebar">
-                    <div className="sidebarHeader">{hands.length} mãos</div>
+                    <div className="sidebarHeader">
+                      <span>{hands.length} mãos</span>
+                      <button
+                        className="sortOrderBtn sortOrderBtnSmall"
+                        onClick={() => setReversed(r => !r)}
+                        title="Inverter ordem"
+                      >
+                        ↑↓
+                      </button>
+                    </div>
                     <ul className="sidebarList">
-                      {hands.map((h, i) => {
+                      {(reversed ? [...hands].reverse() : hands).map((h, i) => {
+                        const originalIndex = reversed ? hands.length - 1 - i : i;
                         const hero = getHeroSummary(h);
                         const won = hero ? hero.netBB > 0 : null;
                         return (
-                          <li key={`${h.id}-${i}`}>
+                          <li key={`${h.id}-${originalIndex}`}>
                             <button
                               className={`sidebarItem${h === hand ? ' sidebarItemActive' : ''}`}
                               onClick={() => handleSelectHand(h)}
                             >
                               <div className="sidebarItemRow">
-                                <span className="sidebarItemId">#{i + 1}</span>
+                                <span className="sidebarItemId">#{originalIndex + 1}</span>
                                 {hero?.heroCards && (
                                   <span className="sidebarItemCards">
                                     <Card card={hero.heroCards[0]} small />

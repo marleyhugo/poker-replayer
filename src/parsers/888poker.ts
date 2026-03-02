@@ -136,9 +136,27 @@ function parseAmount888New(s: string): number {
   return parseFloat(clean) || 0;
 }
 
-/** Extrai cartas separadas por vírgula e/ou espaço: "7h, 5s" → ["7h", "5s"]. */
+/**
+ * Normaliza carta no formato 888poker brasileiro.
+ * Suits: e=espadas(s), c=copas(h), o=ouros(d), p=paus(c)
+ * Ranks: D=Dez(T/10)
+ */
+function normalize888Card(card: string): string {
+  let c = card.trim();
+  if (c.length < 2) return c;
+  // Rank: D → T (Dez = 10)
+  c = c.replace(/^D(?=[echops])/i, 'T');
+  c = c.replace('10', 'T');
+  // Suit: último caractere
+  const suit = c[c.length - 1];
+  const suitMap: Record<string, string> = { e: 's', c: 'h', o: 'd', p: 'c' };
+  if (suitMap[suit]) c = c.slice(0, -1) + suitMap[suit];
+  return c;
+}
+
+/** Extrai cartas separadas por vírgula e/ou espaço com normalização pt-BR. */
 function parseCards888New(s: string): string[] {
-  return s.split(/[,\s]+/).map(c => parseCard(c.trim())).filter(c => c.length >= 2);
+  return s.split(/[,\s]+/).map(c => normalize888Card(c)).filter(c => c.length >= 2);
 }
 
 /** Converte linha de ação do novo formato 888poker em RawAction (verbos lowercase, valores em colchetes). */
@@ -160,11 +178,11 @@ function parse888PokerNew(text: string): ParsedHand {
   // ID: "#Game No : 738293395"
   const id = lines[0].match(/#Game No\s*:\s*(\d+)/)?.[1] ?? '0';
 
-  // Stakes e data: "40/80 Blinds No Limit Holdem - *** 04 01 2026 14:30:48"
+  // Stakes e data: "40/80 Blinds..." ou "800/1.600 Blinds..." (ponto como milhar)
   const stakesLine = lines.find(l => /Blinds/.test(l)) ?? '';
-  const stakesMatch = stakesLine.match(/^(\d+)\/(\d+) Blinds/);
+  const stakesMatch = stakesLine.match(/^([\d.]+)\/([\d.]+) Blinds/);
   const stakes = stakesMatch
-    ? { sb: parseInt(stakesMatch[1], 10), bb: parseInt(stakesMatch[2], 10) }
+    ? { sb: parseAmount888New(stakesMatch[1]), bb: parseAmount888New(stakesMatch[2]) }
     : { sb: 0, bb: 0 };
 
   const dm = stakesLine.match(/\*\*\* (\d{2}) (\d{2}) (\d{4}) (\d{2}:\d{2}:\d{2})/);
@@ -243,30 +261,32 @@ function parse888PokerNew(text: string): ParsedHand {
       continue;
     }
 
-    if (!inAction) continue;
-
-    // Antes: "player posts ante [10]"
+    // Antes e blinds podem aparecer ANTES de ** Dealing down cards ** — capturar antes do guard
     const ante = line.match(/^(.+?) posts ante \[([\d.]+)\]/);
     if (ante) { machine.actions.push({ player: ante[1], type: 'post-ante', amount: parseAmount888New(ante[2]) }); continue; }
-    // Small blind
     const sb = line.match(/^(.+?) posts small blind \[([\d.]+)\]/);
     if (sb) { machine.actions.push({ player: sb[1], type: 'post', amount: parseAmount888New(sb[2]) }); continue; }
-    // Big blind
     const bb = line.match(/^(.+?) posts big blind \[([\d.]+)\]/);
     if (bb) { machine.actions.push({ player: bb[1], type: 'post', amount: parseAmount888New(bb[2]) }); continue; }
+
+    if (!inAction) continue;
 
     const action = parseLineNew(line);
     if (action) machine.actions.push(action);
   }
 
-  // Winners: "First runout Player collected [ 720 ]"
+  // Winners: "First runout Player collected [ 720 ]" ou "Player collected [ 1.100 ]"
   const winners: ParsedHand['winners'] = [];
   let inSummary = false;
   for (const line of lines) {
     if (line === '** Summary **') { inSummary = true; continue; }
     if (!inSummary) continue;
-    const col = line.match(/^First runout (.+?) collected \[ ([\d.]+) \]/);
-    if (col) addWinner(winners, col[1], parseAmount888New(col[2]));
+    // Com prefixo "First runout" (PKO/bounty)
+    const col1 = line.match(/^First runout (.+?) collected \[ ([\d.]+) \]/);
+    if (col1) { addWinner(winners, col1[1], parseAmount888New(col1[2])); continue; }
+    // Sem prefixo (regular)
+    const col2 = line.match(/^(.+?) collected \[ ([\d.]+) \]/);
+    if (col2) addWinner(winners, col2[1], parseAmount888New(col2[2]));
   }
 
   return { id, format: '888poker', date, stakes, tableType: isTournament ? 'tournament' : 'cash', players, dealerSeat, heroName, holeCards, streets, winners };

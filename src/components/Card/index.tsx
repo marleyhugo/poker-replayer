@@ -20,24 +20,29 @@ const RANK_DISPLAY: Record<string, string> = { T: '10' };
 
 /* ─── SVG dos naipes (coordenadas no espaço ~x:8-34, y:38-69) ─── */
 
-function SuitIcon({ suit }: { suit: string }) {
+function SuitIcon({ suit, scale = 1 }: { suit: string; scale?: number }) {
+  const tx = 21, ty = 53.5; // centro aproximado do naipe
+  const wrap = (el: React.ReactElement) =>
+    scale === 1 ? el : (
+      <g transform={`translate(${tx * (1 - scale)}, ${ty * (1 - scale)}) scale(${scale})`}>{el}</g>
+    );
   switch (suit) {
     case 'h':
-      return (
+      return wrap(
         <path
           d="M 21 68 C 12 58 8 51 8 45 C 8 41 11 38 15.5 38 C 18.5 38 20 40 21 43 C 22 40 23.5 38 26.5 38 C 31 38 34 41 34 45 C 34 51 30 58 21 68 Z"
           fill="var(--card-text)"
         />
       );
     case 'd':
-      return (
+      return wrap(
         <path
           d="M 21 38 L 33 53.5 L 21 69 L 9 53.5 Z"
           fill="var(--card-text)"
         />
       );
     case 'c':
-      return (
+      return wrap(
         <g fill="var(--card-text)">
           <circle cx="21" cy="44" r="6" />
           <circle cx="14" cy="55" r="6" />
@@ -46,7 +51,7 @@ function SuitIcon({ suit }: { suit: string }) {
         </g>
       );
     case 's':
-      return (
+      return wrap(
         <path
           d="M 21 38 C 21 38 10 50 10 57 C 10 61 13 64 16.5 64 C 19 64 20.5 62 21 59 L 19 69 L 23 69 L 21 59 C 21.5 62 23 64 25.5 64 C 29 64 32 61 32 57 C 32 50 21 38 21 38 Z"
           fill="var(--card-text)"
@@ -112,17 +117,17 @@ export function Card({ card, small }: CardProps) {
       >
         {displayRank}
       </text>
-      <SuitIcon suit={suit} />
+      <SuitIcon suit={suit} scale={isTwoChar ? 0.75 : 1} />
 
       {/* Rank gigante: centro/inferior direito */}
       <text
-        x={isTwoChar ? 8 : 25}
+        x={isTwoChar ? 6 : 25}
         y="120"
         fill="var(--card-text)"
         fontFamily="Arial, sans-serif"
         fontWeight="bold"
-        fontSize={isTwoChar ? 72 : 90}
-        letterSpacing="-2"
+        fontSize={isTwoChar ? 82 : 90}
+        letterSpacing="-4"
       >
         {displayRank}
       </text>

@@ -19,10 +19,11 @@ interface BetChipsProps {
  * - Action: baseado no % do stack inicial
  */
 export function BetChips({ betAmount, anteBet, betType, startingStack, showBBUnits, bigBlind }: BetChipsProps) {
-  const effectiveBet = betAmount - anteBet;
-  if (effectiveBet <= 0 || betType === 'ante' || betType === 'none') return null;
+  // Antes não entram no campo `bet` da engine, então betAmount já exclui antes.
+  // Mantemos a checagem de anteBet/betType para garantir que só ante não gera chip visual.
+  if (betAmount <= 0 || betType === 'ante' || betType === 'none') return null;
 
-  const label = formatChips(effectiveBet, showBBUnits, bigBlind);
+  const label = formatChips(betAmount, showBBUnits, bigBlind);
 
   if (betType === 'blind') {
     return (
@@ -36,7 +37,7 @@ export function BetChips({ betAmount, anteBet, betType, startingStack, showBBUni
   }
 
   // betType === 'action': calcular % do stack inicial
-  const pct = startingStack > 0 ? effectiveBet / startingStack : 1;
+  const pct = startingStack > 0 ? betAmount / startingStack : 1;
 
   let images: React.ReactNode;
   if (pct <= 0.1) {

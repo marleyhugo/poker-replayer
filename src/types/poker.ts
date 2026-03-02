@@ -16,7 +16,7 @@ export type ActionType = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin' |
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
 /** Formato de hand history suportado. */
-export type PokerFormat = 'pokerstars' | 'ggpoker' | '888poker' | 'wpn';
+export type PokerFormat = 'pokerstars' | 'ggpoker' | '888poker' | 'wpn' | 'ipoker' | 'partypoker';
 
 // ─── Estruturas de dados do parser ─────────────────────────────────────────────
 
