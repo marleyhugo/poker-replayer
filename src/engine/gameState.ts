@@ -43,6 +43,8 @@ export function buildSteps(hand: ParsedHand): GameState[] {
     isActive: false,
     isWinner: false,
     isAllIn: false,
+    betType: 'none',
+    anteBet: 0,
     bounty: p.bounty,
   }));
 
@@ -66,7 +68,7 @@ export function buildSteps(hand: ParsedHand): GameState[] {
 
   /** Zera as apostas da street e desmarca o jogador ativo (início de nova fase). */
   function resetStreetBets() {
-    players.forEach(p => { p.bet = 0; p.isActive = false; });
+    players.forEach(p => { p.bet = 0; p.isActive = false; p.betType = 'none'; p.anteBet = 0; });
   }
 
   /** Marca apenas o jogador `name` como ativo (vez de agir). */
@@ -74,7 +76,30 @@ export function buildSteps(hand: ParsedHand): GameState[] {
     players.forEach(p => { p.isActive = p.name === name; });
   }
 
-  // Passo 0: estado inicial com cartas distribuídas
+  // Processa antes e blinds silenciosamente antes do primeiro snapshot
+  const preflopData = hand.streets.find(s => s.street === 'preflop');
+  if (preflopData) {
+    for (const action of preflopData.actions) {
+      if (action.type === 'post-ante') {
+        const player = players.find(p => p.name === action.player);
+        if (!player) continue;
+        const paid = deduct(player, action.amount ?? 0);
+        pot += paid;
+        player.betType = 'ante';
+        player.anteBet += paid;
+      } else if (action.type === 'post') {
+        const player = players.find(p => p.name === action.player);
+        if (!player) continue;
+        const paid = deduct(player, action.amount ?? 0);
+        pot += paid;
+        player.betType = 'blind';
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Passo 0: estado inicial (antes já descontados)
   steps.push(snapshot('Início da mão'));
 
   for (const streetData of hand.streets) {
@@ -101,6 +126,9 @@ export function buildSteps(hand: ParsedHand): GameState[] {
     }
 
     for (const action of streetData.actions) {
+      // Antes e blinds do preflop já foram processados antes do snapshot inicial
+      if ((action.type === 'post-ante' || action.type === 'post') && streetData.street === 'preflop') continue;
+
       const player = players.find(p => p.name === action.player);
       if (!player) continue;
 
@@ -111,6 +139,7 @@ export function buildSteps(hand: ParsedHand): GameState[] {
         case 'post': {
           const paid = deduct(player, action.amount ?? 0);
           pot += paid;
+          player.betType = 'blind';
           const label = action.amount === hand.stakes.sb ? 'small blind' : 'big blind';
           message = `${action.player} posta ${label} ${fmtAmount(paid)}`;
           break;
@@ -118,6 +147,8 @@ export function buildSteps(hand: ParsedHand): GameState[] {
         case 'post-ante': {
           const paid = deduct(player, action.amount ?? 0);
           pot += paid;
+          player.betType = 'ante';
+          player.anteBet += paid;
           message = `${action.player} posta ante ${fmtAmount(paid)}`;
           break;
         }
@@ -132,32 +163,32 @@ export function buildSteps(hand: ParsedHand): GameState[] {
           break;
         }
         case 'call': {
-          // Valor a pagar = diferença entre a maior aposta da mesa e a aposta atual do jogador,
-          // limitado pelo stack (trata calls implícitos de all-in).
           const maxBet = Math.max(...players.map(p => p.bet));
           const paid = deduct(player, maxBet - player.bet);
           pot += paid;
+          player.betType = 'action';
           message = `${action.player} paga (call) ${fmtAmount(paid)}`;
           break;
         }
         case 'bet': {
           const paid = deduct(player, action.amount ?? 0);
           pot += paid;
+          player.betType = 'action';
           message = `${action.player} aposta (bet) ${fmtAmount(paid)}`;
           break;
         }
         case 'raise': {
-          // raiseTo é o total da aposta na street, não o incremento adicional.
           const raiseTo = action.amount ?? 0;
           const paid = deduct(player, raiseTo - player.bet);
           pot += paid;
+          player.betType = 'action';
           message = `${action.player} aumenta (raise) para ${fmtAmount(player.bet)}`;
           break;
         }
         case 'allin': {
-          // Coloca todas as fichas restantes no pote.
           const paid = deduct(player, player.stack);
           pot += paid;
+          player.betType = 'action';
           message = `${action.player} vai all-in ${fmtAmount(paid)}`;
           break;
         }

@@ -2,34 +2,45 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState } from '../../types/poker';
 import { computePositions } from '../../utils/positions';
 import { Board } from '../Board';
+import { BetChips } from '../BetChips';
 import { ChipAnimation } from '../ChipAnimation';
 import { PlayerSeat } from '../PlayerSeat';
-import { formatChips } from '../../utils/format';
 import styles from './PokerTable.module.css';
 import mesaSvg from '../../assets/mesa.svg';
 
-/**
- * Posições visuais dos assentos na mesa (em % relativo ao container).
- * seat0 é o assento inferior (herói), os demais seguem sentido horário.
- */
-const SEAT_POSITIONS = [
-  { left: 50, top: 88 },  // seat0
-  { left: 22, top: 82 },  // seat1
-  { left:  6, top: 60 },  // seat2
-  { left: 10, top: 30 },  // seat3
-  { left: 30, top: 12 },  // seat4
-  { left: 50, top:  8 },  // seat5
-  { left: 70, top: 12 },  // seat6
-  { left: 90, top: 30 },  // seat7
-  { left: 94, top: 60 },  // seat8
-  { left: 78, top: 82 },  // seat9
-];
+/** Raios da oval dos assentos (em % do container). */
+const RX = 48;
+const RY = 36;
 
-// Posições das apostas: ponto a 45% do caminho entre o centro e cada assento
-const BET_POSITIONS = SEAT_POSITIONS.map(sp => ({
-  left: 50 + 0.45 * (sp.left - 50),
-  top:  50 + 0.45 * (sp.top  - 50),
-}));
+/** Gera posições de assento distribuídas simetricamente numa oval para N jogadores. */
+function computeSeatPositions(count: number) {
+  const step = (2 * Math.PI) / count;
+  return Array.from({ length: count }, (_, i) => ({
+    left: 50 - RX * Math.sin(i * step),
+    top:  50 + RY * Math.cos(i * step),
+  }));
+}
+
+/** Gera posições de aposta a distância visual uniforme dos assentos em direção ao centro. */
+/** Distância por seat index (0=hero, 1..8 sentido horário). */
+const SEAT_DIST: Record<number, number> = {
+  0: 70, 1: 70, 2: 95, 3: 80, 4: 70, 5: 90, 6: 80, 7: 95, 8: 80,
+};
+
+function computeBetPositions(seats: { left: number; top: number }[]) {
+  const W = 680, H = 380;
+  return seats.map((sp, i) => {
+    const d = SEAT_DIST[i] ?? 80;
+    const dxPx = ((50 - sp.left) / 100) * W;
+    const dyPx = ((50 - sp.top) / 100) * H;
+    const dist = Math.sqrt(dxPx * dxPx + dyPx * dyPx) || 1;
+    const s = d / dist;
+    return {
+      left: sp.left + (dxPx * s / W) * 100,
+      top:  sp.top  + (dyPx * s / H) * 100,
+    };
+  });
+}
 
 const CENTER = { left: 50, top: 50 };
 
@@ -67,6 +78,10 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
     return [...sorted.slice(heroIdx), ...sorted.slice(0, heroIdx)];
   }, [state.players, heroName]);
 
+  // Posições calculadas dinamicamente para o número atual de jogadores
+  const seatPositions = useMemo(() => computeSeatPositions(sortedPlayers.length), [sortedPlayers.length]);
+  const betPositions = useMemo(() => computeBetPositions(seatPositions), [seatPositions]);
+
   // Mapa de número de assento → índice visual (0-based) para lookup de posição
   const positionMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -96,11 +111,11 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
       if (!prevPlayer) continue;
 
       const posIdx = positionMap.get(player.seat) ?? 0;
-      const seat   = SEAT_POSITIONS[posIdx] ?? CENTER;
-      const betPos = BET_POSITIONS[posIdx]  ?? CENTER;
+      const seat   = seatPositions[posIdx] ?? CENTER;
+      const betPos = betPositions[posIdx]  ?? CENTER;
 
-      // Bet increased → fly from seat to bet zone (stays as stack)
-      if (player.bet > prevPlayer.bet) {
+      // Bet increased → fly from seat to bet zone (skip ante-only bets)
+      if (player.bet > prevPlayer.bet && player.betType !== 'ante') {
         newChips.push({
           id: `bet-${player.seat}-${state.step}`,
           fromLeft: seat.left,   fromTop: seat.top,
@@ -132,7 +147,7 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
 
     if (newChips.length > 0) setChips(prev => [...prev, ...newChips]);
     prevStateRef.current = state;
-  }, [state, positionMap]);
+  }, [state, positionMap, seatPositions, betPositions]);
 
   const removeChip = useCallback((id: string) => {
     setChips(prev => prev.filter(c => c.id !== id));
@@ -153,22 +168,27 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
             <div className={styles.streetBadge}>{state.street.toUpperCase()}</div>
           </div>
 
-          {sortedPlayers.map(player => (
-            <PlayerSeat
-              key={player.seat}
-              player={player}
-              position={`seat${positionMap.get(player.seat) ?? 0}`}
-              positionLabel={pokerPositions.get(player.seat)}
-              showBBUnits={showBBUnits}
-              bigBlind={bigBlind}
-            />
-          ))}
+          {sortedPlayers.map(player => {
+            const posIdx = positionMap.get(player.seat) ?? 0;
+            const pos = seatPositions[posIdx] ?? CENTER;
+            return (
+              <PlayerSeat
+                key={player.seat}
+                player={player}
+                left={pos.left}
+                top={pos.top}
+                positionLabel={pokerPositions.get(player.seat)}
+                showBBUnits={showBBUnits}
+                bigBlind={bigBlind}
+              />
+            );
+          })}
 
           {/* Persistent bet stacks — visible while player.bet > 0 */}
           {sortedPlayers.map(player => {
             if (player.bet <= 0) return null;
             const posIdx = positionMap.get(player.seat) ?? 0;
-            const betPos = BET_POSITIONS[posIdx] ?? CENTER;
+            const betPos = betPositions[posIdx] ?? CENTER;
             return (
               <div
                 key={`betstack-${player.seat}`}
@@ -176,7 +196,14 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
                 style={{ left: `${betPos.left}%`, top: `${betPos.top}%` }}
                 aria-hidden="true"
               >
-                {formatChips(player.bet, showBBUnits, bigBlind)}
+                <BetChips
+                  betAmount={player.bet}
+                  anteBet={player.anteBet}
+                  betType={player.betType}
+                  startingStack={player.stack + player.totalInvested}
+                  showBBUnits={showBBUnits}
+                  bigBlind={bigBlind}
+                />
               </div>
             );
           })}

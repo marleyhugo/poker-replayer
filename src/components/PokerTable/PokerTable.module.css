@@ -64,32 +64,12 @@
   font-weight: 500;
 }
 
-/* Persistent bet stack shown in the bet zone while player.bet > 0 */
+/* Container for bet chips in the bet zone */
 .betStack {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, var(--chip-light), var(--chip-dark));
-  border: 2px solid var(--chip-border);
-  color: var(--card-black);
-  font-size: 0.44rem;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  line-height: 1.1;
-  padding: 0 2px;
   pointer-events: none;
   z-index: 5;
-  animation: betStackIn 0.15s ease-out;
-}
-
-@keyframes betStackIn {
-  from { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
-  to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
 }
 
 .tableImg {

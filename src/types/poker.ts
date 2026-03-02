@@ -72,6 +72,10 @@ export interface PlayerState {
   isActive: boolean;
   isWinner: boolean;
   isAllIn: boolean;
+  /** Tipo da aposta atual: ante, blind (SB/BB) ou action (call/bet/raise/allin). */
+  betType: 'none' | 'ante' | 'blind' | 'action';
+  /** Parcela da aposta atual que é de ante (para excluir da representação visual). */
+  anteBet: number;
   bounty?: number;
 }
 

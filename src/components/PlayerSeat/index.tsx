@@ -5,8 +5,10 @@ import styles from './PlayerSeat.module.css';
 
 interface PlayerSeatProps {
   player: PlayerState;
-  /** Nome da classe CSS de posicionamento (ex: "seat0", "seat3"). */
-  position: string;
+  /** Posição horizontal em % do container. */
+  left: number;
+  /** Posição vertical em % do container. */
+  top: number;
   /** Label de posição de poker (ex: "BTN", "SB", "BB", "UTG", "CO"). */
   positionLabel?: string;
   showBBUnits: boolean;
@@ -17,11 +19,9 @@ interface PlayerSeatProps {
  * Renderiza o assento de um jogador na mesa: cartas, stack, aposta atual,
  * indicadores de all-in, vencedor e botão de dealer.
  */
-export function PlayerSeat({ player, position, positionLabel, showBBUnits, bigBlind }: PlayerSeatProps) {
-  // Compõe as classes CSS dinamicamente com base no estado do jogador
+export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigBlind }: PlayerSeatProps) {
   const classes = [
     styles.seat,
-    styles[position],
     player.folded ? styles.folded : '',
     player.isActive ? styles.active : '',
     player.isWinner ? styles.winner : '',
@@ -29,7 +29,7 @@ export function PlayerSeat({ player, position, positionLabel, showBBUnits, bigBl
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={classes}>
+    <div className={classes} style={{ left: `${left}%`, top: `${top}%` }}>
       {player.isDealer && <div className={styles.dealerBtn}>D</div>}
 
       <div className={styles.cards}>
@@ -51,19 +51,12 @@ export function PlayerSeat({ player, position, positionLabel, showBBUnits, bigBl
           {positionLabel && (
             <span className={styles.positionLabel}>{positionLabel}</span>
           )}
-          {/* Trunca nomes longos para não estourar o layout */}
           {player.name.length > 12 ? player.name.slice(0, 11) + '…' : player.name}
         </div>
         <div className={styles.stack}>
           {formatChips(player.stack, showBBUnits, bigBlind)}
         </div>
       </div>
-
-      {player.bet > 0 && !player.folded && (
-        <div className={styles.bet}>
-          {formatChips(player.bet, showBBUnits, bigBlind)}
-        </div>
-      )}
 
       {player.isAllIn && !player.folded && (
         <div className={styles.allInBadge}>ALL IN</div>

@@ -51,15 +51,6 @@
   font-weight: bold;
 }
 
-.bet {
-  background: rgba(200, 170, 0, 0.85);
-  color: #111;
-  font-size: 0.7rem;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
 .dealerBtn {
   position: absolute;
   top: -10px;
@@ -121,14 +112,3 @@
   flex-shrink: 0;
 }
 
-/* Seat positions (clockwise from bottom-center) */
-.seat0 { top: 88%; left: 50%; }
-.seat1 { top: 82%; left: 22%; }
-.seat2 { top: 60%; left:  6%; }
-.seat3 { top: 30%; left: 10%; }
-.seat4 { top: 12%; left: 30%; }
-.seat5 { top:  8%; left: 50%; }
-.seat6 { top: 12%; left: 70%; }
-.seat7 { top: 30%; left: 90%; }
-.seat8 { top: 60%; left: 94%; }
-.seat9 { top: 82%; left: 78%; }

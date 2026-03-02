@@ -1,3 +1,4 @@
+import fichaSvg from '../../assets/ficha.svg';
 import styles from './ChipAnimation.module.css';
 
 interface ChipProps {
@@ -15,7 +16,7 @@ interface ChipProps {
  * Usa CSS custom properties (`--from-*` / `--to-*`) para controlar a trajetória.
  * Chama `onDone(id)` ao fim da animação para remover o elemento da lista.
  */
-export function ChipAnimation({ id, fromLeft, fromTop, toLeft, toTop, amount, onDone }: ChipProps) {
+export function ChipAnimation({ id, fromLeft, fromTop, toLeft, toTop, onDone }: ChipProps) {
   return (
     <div
       className={styles.chip}
@@ -28,7 +29,7 @@ export function ChipAnimation({ id, fromLeft, fromTop, toLeft, toTop, amount, on
       onAnimationEnd={() => onDone(id)}
       aria-hidden="true"
     >
-      {amount > 0 ? `$${amount.toFixed(2)}` : ''}
+      <img src={fichaSvg} alt="" className={styles.chipImg} />
     </div>
   );
 }
