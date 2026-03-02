@@ -4,6 +4,22 @@
   align-items: center;
   gap: 16px;
   width: 100%;
+  position: relative;
+}
+
+.potOdds {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 60, 120, 0.65);
+  color: #7ecfff;
+  font-size: 0.8rem;
+  font-weight: bold;
+  padding: 4px 14px;
+  border-radius: 16px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  z-index: 10;
 }
 
 .tableOuter {
@@ -62,6 +78,26 @@
   min-width: 340px;
   text-align: center;
   font-weight: 500;
+}
+
+/* Dealer button — percorre a oval interna da mesa */
+.dealerBtn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f0d060;
+  color: #111;
+  font-size: 0.7rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #b8a030;
+  z-index: 6;
+  transition: left 0.35s ease, top 0.35s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 /* Container for bet chips in the bet zone */

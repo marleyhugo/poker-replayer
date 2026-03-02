@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState } from '../../types/poker';
 import { computePositions } from '../../utils/positions';
+import { calcPotOdds } from '../../utils/potOdds';
 import { Board } from '../Board';
 import { BetChips } from '../BetChips';
 import { ChipAnimation } from '../ChipAnimation';
@@ -18,6 +19,10 @@ const HERO_OFFSET_Y = -5;
 /** Raios originais usados para posicionar as fichas de aposta. */
 const BET_RX = 48;
 const BET_RY = 36;
+
+/** Raios da oval interna para o botão do dealer. */
+const DEALER_RX = 36;
+const DEALER_RY = 29;
 
 /** Gera posições distribuídas simetricamente numa oval para N jogadores. */
 function computeOvalPositions(count: number, rx: number, ry: number) {
@@ -68,6 +73,7 @@ interface PokerTableProps {
   showBBUnits: boolean;
   bigBlind: number;
   zoom?: number;
+  showVillainCards?: boolean;
 }
 
 /**
@@ -75,7 +81,7 @@ interface PokerTableProps {
  * Ordena e rotaciona os jogadores para que o herói fique no assento inferior (seat0).
  * Gerencia animações de fichas ao detectar mudanças de estado entre passos.
  */
-export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }: PokerTableProps) {
+export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1, showVillainCards = false }: PokerTableProps) {
   // Ordena por assento e rotaciona para o herói ficar sempre no seat0 (base da tela)
   const sortedPlayers = useMemo(() => {
     const sorted = [...state.players].sort((a, b) => a.seat - b.seat);
@@ -109,6 +115,30 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
     return computePositions(state.players, dealer.seat);
   }, [state.players]);
 
+  // Pot odds do herói (null quando não há aposta a pagar)
+  const potOdds = useMemo(
+    () => heroName ? calcPotOdds(state, heroName) : null,
+    [state, heroName],
+  );
+
+  // Mão finalizada: showdown ou algum jogador já marcado como vencedor
+  const isHandFinished = state.street === 'showdown' || state.players.some(p => p.isWinner);
+
+  // Posição do botão do dealer numa oval interna da mesa
+  // Hero (posIdx 0) e oposto (posIdx N/2): posiciona ao lado esquerdo das cartas
+  const dealerPositions = useMemo(() => computeOvalPositions(sortedPlayers.length, DEALER_RX, DEALER_RY), [sortedPlayers.length]);
+  const oppositeIdx = Math.floor(sortedPlayers.length / 2);
+  const dealerPos = useMemo(() => {
+    const dealer = state.players.find(p => p.isDealer);
+    if (!dealer) return null;
+    const posIdx = positionMap.get(dealer.seat) ?? 0;
+    if (posIdx === 0 || posIdx === oppositeIdx) {
+      const seat = seatPositions[posIdx];
+      return { left: seat.left - 8, top: seat.top - 4 };
+    }
+    return dealerPositions[posIdx] ?? null;
+  }, [state.players, positionMap, dealerPositions, seatPositions, oppositeIdx]);
+
   const prevStateRef = useRef<GameState | null>(null);
   const [chips, setChips] = useState<ChipEvent[]>([]);
 
@@ -138,7 +168,9 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
       }
 
       // Bet cleared (> 0 → 0) and not a winner → chips collect to center pot
-      if (prevPlayer.bet > 0 && player.bet === 0 && !player.isWinner) {
+      // Pula animação para blinds/antes (apostas forçadas no início da mão)
+      if (prevPlayer.bet > 0 && player.bet === 0 && !player.isWinner
+          && prevPlayer.betType !== 'blind' && prevPlayer.betType !== 'ante') {
         newChips.push({
           id: `collect-${player.seat}-${state.step}`,
           fromLeft: betPos.left, fromTop: betPos.top,
@@ -168,6 +200,11 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
 
   return (
     <div className={styles.tableContainer}>
+      {potOdds && (
+        <div className={styles.potOdds}>
+          Odds: {potOdds.percentage % 1 === 0 ? potOdds.percentage : potOdds.percentage.toFixed(1)}%
+        </div>
+      )}
       <div
         className={styles.tableOuter}
         style={zoom !== 1 ? { transform: `scale(${zoom})`, transformOrigin: 'top center' } : undefined}
@@ -193,9 +230,20 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
                 showBBUnits={showBBUnits}
                 bigBlind={bigBlind}
                 isHero={player.name === heroName}
+                hideCards={player.name !== heroName && !showVillainCards && !isHandFinished}
               />
             );
           })}
+
+          {/* Dealer button — posicionado numa oval interna */}
+          {dealerPos && (
+            <div
+              className={styles.dealerBtn}
+              style={{ left: `${dealerPos.left}%`, top: `${dealerPos.top}%` }}
+            >
+              D
+            </div>
+          )}
 
           {/* Persistent bet stacks — visible while player.bet > 0 */}
           {sortedPlayers.map(player => {

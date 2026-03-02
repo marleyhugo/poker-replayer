@@ -14,13 +14,15 @@ interface PlayerSeatProps {
   showBBUnits: boolean;
   bigBlind: number;
   isHero?: boolean;
+  /** Quando true, mostra cartas viradas (??) mesmo que holeCards existam. */
+  hideCards?: boolean;
 }
 
 /**
  * Renderiza o assento de um jogador na mesa: cartas, stack, aposta atual,
  * indicadores de all-in, vencedor e botão de dealer.
  */
-export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigBlind, isHero }: PlayerSeatProps) {
+export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigBlind, isHero, hideCards }: PlayerSeatProps) {
   const classes = [
     styles.seat,
     player.folded ? styles.folded : '',
@@ -31,10 +33,8 @@ export function PlayerSeat({ player, left, top, positionLabel, showBBUnits, bigB
 
   return (
     <div className={classes} style={{ left: `${left}%`, top: `${top}%` }}>
-      {player.isDealer && <div className={styles.dealerBtn}>D</div>}
-
       <div className={styles.cards}>
-        {player.holeCards ? (
+        {player.holeCards && !hideCards ? (
           <>
             <Card card={player.holeCards[0]} />
             <Card card={player.holeCards[1]} />

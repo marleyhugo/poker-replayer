@@ -54,6 +54,7 @@ export default function App() {
   const [hands, setHands] = useState<ParsedHand[]>([]);
   const [hand,  setHand]  = useState<ParsedHand | null>(null);
   const [showBBUnits, setShowBBUnits] = useState(false);
+  const [showVillainCards, setShowVillainCards] = useState(false);
   const [reversed, setReversed] = useState(false);
   const [zoom, setZoom] = useState(1);
   const replay = useReplay(hand);
@@ -256,6 +257,15 @@ export default function App() {
                       </button>
                     </div>
                     <div className="sidebarPanelRow">
+                      <span className="sidebarPanelLabel">Cartas</span>
+                      <button
+                        className={`sidebarPanelBtn${showVillainCards ? ' sidebarPanelBtnActive' : ''}`}
+                        onClick={() => setShowVillainCards(v => !v)}
+                      >
+                        {showVillainCards ? 'Todas' : 'Hero'}
+                      </button>
+                    </div>
+                    <div className="sidebarPanelRow">
                       <span className="sidebarPanelLabel">Zoom</span>
                       <input
                         type="range"
@@ -280,6 +290,7 @@ export default function App() {
                     showBBUnits={showBBUnits}
                     bigBlind={hand.stakes.bb}
                     zoom={zoom}
+                    showVillainCards={showVillainCards}
                   />
 
                   <ReplayControls
