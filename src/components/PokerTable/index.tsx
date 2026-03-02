@@ -145,7 +145,9 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }:
         style={zoom !== 1 ? { transform: `scale(${zoom})`, transformOrigin: 'top center' } : undefined}
       >
         <div className={styles.tableInner}>
-          <img src={mesaSvg} alt="" className={styles.tableImg} aria-hidden="true" />
+          <div className={styles.tableBg}>
+            <img src={mesaSvg} alt="" className={styles.tableImg} aria-hidden="true" />
+          </div>
           <div className={styles.center}>
             <Board cards={state.board} pot={state.pot} showBBUnits={showBBUnits} bigBlind={bigBlind} />
             <div className={styles.streetBadge}>{state.street.toUpperCase()}</div>

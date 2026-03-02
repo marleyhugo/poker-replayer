@@ -112,6 +112,13 @@ export default function App() {
           FULL REPLAYER
         </h1>
         <div className="headerActions">
+          {hand && hands.length <= 1 && (
+            <div className="handInfo">
+              <span className="formatBadge">{hand.format}</span>
+              <span className="handId">Mão #1</span>
+              <span className="stakes">{formatStakes(hand.stakes, hand.tableType)}</span>
+            </div>
+          )}
           {showBackBtn && (
             <button className="backBtn" onClick={handleBackToList}>
               ← Mãos
@@ -166,6 +173,11 @@ export default function App() {
 
               {hands.length > 1 && (
                 <div className="sidebarColumn" style={sidebarHeight ? { maxHeight: sidebarHeight } : undefined}>
+                  <div className="handInfoPanel">
+                    <span className="formatBadge">{hand.format}</span>
+                    <span className="handId">Mão #{currentHandIndex + 1}</span>
+                    <span className="stakes">{formatStakes(hand.stakes, hand.tableType)}</span>
+                  </div>
                   <aside className="sidebar">
                     <div className="sidebarHeader">{hands.length} mãos</div>
                     <ul className="sidebarList">
@@ -239,12 +251,6 @@ export default function App() {
 
               {replay.state ? (
                 <div className="replayView" ref={replayRef}>
-                  <div className="handInfo">
-                    <span className="formatBadge">{hand.format}</span>
-                    <span className="handId">Mão #{currentHandIndex + 1}</span>
-                    <span className="stakes">{formatStakes(hand.stakes, hand.tableType)}</span>
-                  </div>
-
                   <PokerTable
                     state={replay.state}
                     heroName={hand.heroName}
