@@ -49,6 +49,7 @@ interface PokerTableProps {
   heroName?: string;
   showBBUnits: boolean;
   bigBlind: number;
+  zoom?: number;
 }
 
 /**
@@ -56,7 +57,7 @@ interface PokerTableProps {
  * Ordena e rotaciona os jogadores para que o herói fique no assento inferior (seat0).
  * Gerencia animações de fichas ao detectar mudanças de estado entre passos.
  */
-export function PokerTable({ state, heroName, showBBUnits, bigBlind }: PokerTableProps) {
+export function PokerTable({ state, heroName, showBBUnits, bigBlind, zoom = 1 }: PokerTableProps) {
   // Ordena por assento e rotaciona para o herói ficar sempre no seat0 (base da tela)
   const sortedPlayers = useMemo(() => {
     const sorted = [...state.players].sort((a, b) => a.seat - b.seat);
@@ -139,7 +140,10 @@ export function PokerTable({ state, heroName, showBBUnits, bigBlind }: PokerTabl
 
   return (
     <div className={styles.tableContainer}>
-      <div className={styles.tableOuter}>
+      <div
+        className={styles.tableOuter}
+        style={zoom !== 1 ? { transform: `scale(${zoom})`, transformOrigin: 'top center' } : undefined}
+      >
         <div className={styles.tableInner}>
           <img src={mesaSvg} alt="" className={styles.tableImg} aria-hidden="true" />
           <div className={styles.center}>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import logoImg from './assets/logo.png';
 import type { ParsedHand } from './types/poker';
 import { computePositions } from './utils/positions';
@@ -54,7 +54,21 @@ export default function App() {
   const [hands, setHands] = useState<ParsedHand[]>([]);
   const [hand,  setHand]  = useState<ParsedHand | null>(null);
   const [showBBUnits, setShowBBUnits] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const replay = useReplay(hand);
+  const replayRef = useRef<HTMLDivElement>(null);
+  const [sidebarHeight, setSidebarHeight] = useState<number | undefined>();
+
+  useEffect(() => {
+    if (!replayRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setSidebarHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(replayRef.current);
+    return () => observer.disconnect();
+  }, [hand]);
 
   const handleHandsParsed = (hs: ParsedHand[]) => {
     setHands(hs);
@@ -151,53 +165,80 @@ export default function App() {
             <div className={hands.length > 1 ? 'layout' : ''}>
 
               {hands.length > 1 && (
-                <aside className="sidebar">
-                  <div className="sidebarHeader">{hands.length} mãos</div>
-                  <ul className="sidebarList">
-                    {hands.map((h, i) => {
-                      const hero = getHeroSummary(h);
-                      const won = hero ? hero.netBB > 0 : null;
-                      return (
-                        <li key={`${h.id}-${i}`}>
-                          <button
-                            className={`sidebarItem${h === hand ? ' sidebarItemActive' : ''}`}
-                            onClick={() => handleSelectHand(h)}
-                          >
-                            <div className="sidebarItemRow">
-                              <span className="sidebarItemId">#{i + 1}</span>
-                              {hero?.heroCards && (
-                                <span className="sidebarItemCards">
-                                  <Card card={hero.heroCards[0]} small />
-                                  <Card card={hero.heroCards[1]} small />
-                                </span>
-                              )}
-                              {won !== null && (
-                                <span className={`sidebarItemResult${won ? ' sidebarItemResultWon' : ' sidebarItemResultLost'}`}>
-                                  {won ? 'win' : 'loss'}
-                                </span>
-                              )}
-                            </div>
-                            <div className="sidebarItemRow">
-                              <span className="sidebarItemStakes">{formatStakes(h.stakes, h.tableType)}</span>
-                              {hero?.heroPosition && (
-                                <span className="sidebarItemPosition">{hero.heroPosition}</span>
-                              )}
-                              {hero && (
-                                <span className="sidebarItemStack">
-                                  {hero.startStackBB % 1 === 0 ? hero.startStackBB : hero.startStackBB.toFixed(1)}BB
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </aside>
+                <div className="sidebarColumn" style={sidebarHeight ? { maxHeight: sidebarHeight } : undefined}>
+                  <aside className="sidebar">
+                    <div className="sidebarHeader">{hands.length} mãos</div>
+                    <ul className="sidebarList">
+                      {hands.map((h, i) => {
+                        const hero = getHeroSummary(h);
+                        const won = hero ? hero.netBB > 0 : null;
+                        return (
+                          <li key={`${h.id}-${i}`}>
+                            <button
+                              className={`sidebarItem${h === hand ? ' sidebarItemActive' : ''}`}
+                              onClick={() => handleSelectHand(h)}
+                            >
+                              <div className="sidebarItemRow">
+                                <span className="sidebarItemId">#{i + 1}</span>
+                                {hero?.heroCards && (
+                                  <span className="sidebarItemCards">
+                                    <Card card={hero.heroCards[0]} small />
+                                    <Card card={hero.heroCards[1]} small />
+                                  </span>
+                                )}
+                                {won !== null && (
+                                  <span className={`sidebarItemResult${won ? ' sidebarItemResultWon' : ' sidebarItemResultLost'}`}>
+                                    {won ? 'win' : 'loss'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="sidebarItemRow">
+                                <span className="sidebarItemStakes">{formatStakes(h.stakes, h.tableType)}</span>
+                                {hero?.heroPosition && (
+                                  <span className="sidebarItemPosition">{hero.heroPosition}</span>
+                                )}
+                                {hero && (
+                                  <span className="sidebarItemStack">
+                                    {hero.startStackBB % 1 === 0 ? hero.startStackBB : hero.startStackBB.toFixed(1)}BB
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </aside>
+
+                  <div className="sidebarPanel">
+                    <div className="sidebarPanelRow">
+                      <span className="sidebarPanelLabel">Valores</span>
+                      <button
+                        className={`sidebarPanelBtn${showBBUnits ? ' sidebarPanelBtnActive' : ''}`}
+                        onClick={() => setShowBBUnits(v => !v)}
+                      >
+                        {showBBUnits ? 'BB' : 'Fichas'}
+                      </button>
+                    </div>
+                    <div className="sidebarPanelRow">
+                      <span className="sidebarPanelLabel">Zoom</span>
+                      <input
+                        type="range"
+                        className="sidebarZoomSlider"
+                        min="0.6"
+                        max="1.4"
+                        step="0.05"
+                        value={zoom}
+                        onChange={e => setZoom(Number(e.target.value))}
+                      />
+                      <span className="sidebarPanelValue">{Math.round(zoom * 100)}%</span>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {replay.state ? (
-                <div className="replayView">
+                <div className="replayView" ref={replayRef}>
                   <div className="handInfo">
                     <span className="formatBadge">{hand.format}</span>
                     <span className="handId">Mão #{currentHandIndex + 1}</span>
@@ -209,6 +250,7 @@ export default function App() {
                     heroName={hand.heroName}
                     showBBUnits={showBBUnits}
                     bigBlind={hand.stakes.bb}
+                    zoom={zoom}
                   />
 
                   <ReplayControls
@@ -220,8 +262,6 @@ export default function App() {
                     onNextHand={hands.length > 1 ? handleNextHand : undefined}
                     hasPrevHand={hasPrevHand}
                     onPrevHand={hands.length > 1 ? handlePrevHand : undefined}
-                    showBBUnits={showBBUnits}
-                    onToggleBBUnits={() => setShowBBUnits(v => !v)}
                   />
                 </div>
               ) : (

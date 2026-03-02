@@ -172,10 +172,10 @@
 /* ── Sidebar layout ────────────────────────────────────────── */
 .layout {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   align-items: flex-start;
   width: 100%;
-  max-width: 980px;
+  max-width: 1040px;
 }
 
 .sidebar {
@@ -185,11 +185,10 @@
   border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
-  max-height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .sidebarHeader {
@@ -258,6 +257,80 @@
 .sidebarItemResultWon  { color: #4caf82; }
 .sidebarItemResultLost { color: #e05c5c; }
 
+/* ── Sidebar column (sidebar + controls panel) ───────────── */
+.sidebarColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+/* ── Sidebar controls panel ──────────────────────────────── */
+.sidebarPanel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sidebarPanelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.sidebarPanelLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.3px;
+  min-width: 40px;
+}
+
+.sidebarPanelBtn {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sidebarPanelBtn:hover {
+  background: var(--color-accent-dark);
+  color: var(--color-text);
+}
+
+.sidebarPanelBtnActive {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.sidebarZoomSlider {
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+  accent-color: var(--color-gold);
+  cursor: pointer;
+}
+
+.sidebarPanelValue {
+  font-size: 0.68rem;
+  color: var(--color-text-dim);
+  min-width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 900px) {
-  .sidebar { display: none; }
+  .sidebarColumn { display: none; }
 }

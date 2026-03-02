@@ -9,8 +9,6 @@ interface ReplayControlsProps {
   hasNextHand: boolean;
   onPrevHand?: () => void;
   hasPrevHand: boolean;
-  showBBUnits: boolean;
-  onToggleBBUnits: () => void;
 }
 
 /**
@@ -26,8 +24,6 @@ export function ReplayControls({
   hasNextHand,
   onPrevHand,
   hasPrevHand,
-  showBBUnits,
-  onToggleBBUnits,
 }: ReplayControlsProps) {
   const atStart = currentStep === 0;
   const atEnd   = currentStep === totalSteps - 1;
@@ -76,15 +72,6 @@ export function ReplayControls({
         )}
       </div>
 
-      <div className={styles.bbToggle}>
-        <button
-          className={`${styles.btn} ${styles.bbToggleBtn}${showBBUnits ? ` ${styles.bbToggleActive}` : ''}`}
-          onClick={onToggleBBUnits}
-          title="Alternar entre fichas e BB"
-        >
-          {showBBUnits ? 'BB' : 'Fichas'}
-        </button>
-      </div>
     </div>
   );
 }
