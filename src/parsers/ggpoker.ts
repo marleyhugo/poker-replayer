@@ -44,13 +44,13 @@ export function parseGGPoker(text: string): ParsedHand {
   const players: ParsedHand['players'] = [];
   for (const line of lines) {
     if (line.startsWith('*** SUMMARY')) break;
-    // Padrão preferencial: "Seat 1: PlayerName ($2.00 in chips)"
-    const m1 = line.match(/^Seat (\d+): ([^(]+?) \(\$?([\d,.]+) in chips\)/);
+    // Padrão preferencial: "Seat 1: PlayerName ($2.00 in chips)" ou "Seat 1: PlayerName ($2.00 in chips, $10 bounty)"
+    const m1 = line.match(/^Seat (\d+): ([^(]+?) \(\$?([\d,.]+) in chips(?:,\s*\$?([\d,.]+) bounty)?\)/);
     if (m1) {
       const seat = parseInt(m1[1]);
       if (!seenSeats.has(seat)) {
         seenSeats.add(seat);
-        players.push({ seat, name: m1[2].trim(), stack: parseAmount(m1[3]) });
+        players.push({ seat, name: m1[2].trim(), stack: parseAmount(m1[3]), bounty: m1[4] ? parseAmount(m1[4]) : undefined });
       }
       continue;
     }
@@ -128,26 +128,24 @@ export function parseGGPoker(text: string): ParsedHand {
     if (action) machine.actions.push(action);
   }
 
+  // Vencedores — fonte primária: "collected X from pot" (antes do SUMMARY, nome limpo)
   const winners: ParsedHand['winners'] = [];
-
-  // Pass 1: formato tournament — "player collected X from pot" na seção SHOWDOWN
-  let inShowdown = false;
   for (const line of lines) {
-    if (/\*\*\* (?:SHOW ?DOWN) \*\*\*/.test(line)) { inShowdown = true; continue; }
     if (/\*\*\* SUMMARY \*\*\*/.test(line)) break;
-    if (!inShowdown) continue;
     const col = line.match(/^(.+?) collected \$?([\d,.]+) from/);
     if (col) addWinner(winners, col[1], parseAmount(col[2]));
   }
-
-  // Pass 2: fallback para formato cash game — "player collected $X" na SUMMARY
+  // Fallback: seção SUMMARY — strip de posição do nome
   if (winners.length === 0) {
     let inSummary = false;
     for (const line of lines) {
       if (/\*\*\* SUMMARY \*\*\*/.test(line)) { inSummary = true; continue; }
       if (!inSummary) continue;
-      const col = line.match(/^(.+?) collected \$?([\d,.]+)/);
-      if (col) addWinner(winners, col[1], parseAmount(col[2]));
+      const seat = line.match(/^Seat \d+: (.+?) (?:\(.+?\) )?(?:collected|showed .+ and won) \(\$?([\d,.]+)\)/);
+      if (seat) {
+        const name = seat[1].replace(/\s*\((?:button|small blind|big blind|big blind\/ante)\)\s*$/i, '').trim();
+        addWinner(winners, name, parseAmount(seat[2]));
+      }
     }
   }
 

@@ -55,8 +55,10 @@ export default function App() {
   const [hand,  setHand]  = useState<ParsedHand | null>(null);
   const [showBBUnits, setShowBBUnits] = useState(false);
   const [showVillainCards, setShowVillainCards] = useState(false);
+  const [showResult, setShowResult] = useState(true);
   const [reversed, setReversed] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [selectedHands, setSelectedHands] = useState<Set<number>>(new Set());
   const replay = useReplay(hand);
   const replayRef = useRef<HTMLDivElement>(null);
   const [sidebarHeight, setSidebarHeight] = useState<number | undefined>();
@@ -79,7 +81,31 @@ export default function App() {
   };
   const handleSelectHand = (h: ParsedHand) => setHand(h);
   const handleBackToList = () => setHand(null);
-  const handleReset      = () => { setHands([]); setHand(null); };
+  const handleReset      = () => { setHands([]); setHand(null); setSelectedHands(new Set()); };
+
+  const toggleHandSelected = (index: number) => {
+    setSelectedHands(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const handleExport = () => {
+    if (selectedHands.size === 0) return;
+    const text = hands
+      .filter((_, i) => selectedHands.has(i))
+      .map(h => h.rawText)
+      .join('\n\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hands_export.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Navegação entre mãos na sessão atual
   const currentHandIndex = hand ? hands.indexOf(hand) : -1;
@@ -187,11 +213,6 @@ export default function App() {
 
               {hands.length > 1 && (
                 <div className="sidebarColumn" style={sidebarHeight ? { maxHeight: sidebarHeight } : undefined}>
-                  <div className="handInfoPanel">
-                    <span className="formatBadge">{hand.format}</span>
-                    <span className="handId">Mão #{currentHandIndex + 1}</span>
-                    <span className="stakes">{formatStakes(hand.stakes, hand.tableType)}</span>
-                  </div>
                   <aside className="sidebar">
                     <div className="sidebarHeader">
                       <span>{hands.length} mãos</span>
@@ -215,6 +236,13 @@ export default function App() {
                               onClick={() => handleSelectHand(h)}
                             >
                               <div className="sidebarItemRow">
+                                <input
+                                  type="checkbox"
+                                  className="sidebarItemCheck"
+                                  checked={selectedHands.has(originalIndex)}
+                                  onClick={e => e.stopPropagation()}
+                                  onChange={() => toggleHandSelected(originalIndex)}
+                                />
                                 <span className="sidebarItemId">#{originalIndex + 1}</span>
                                 {hero?.heroCards && (
                                   <span className="sidebarItemCards">
@@ -222,7 +250,7 @@ export default function App() {
                                     <Card card={hero.heroCards[1]} small />
                                   </span>
                                 )}
-                                {won !== null && (
+                                {showResult && won !== null && (
                                   <span className={`sidebarItemResult${won ? ' sidebarItemResultWon' : ' sidebarItemResultLost'}`}>
                                     {won ? 'win' : 'loss'}
                                   </span>
@@ -246,6 +274,12 @@ export default function App() {
                     </ul>
                   </aside>
 
+                  {selectedHands.size > 0 && (
+                    <button className="exportBtn" onClick={handleExport}>
+                      Exportar {selectedHands.size} {selectedHands.size === 1 ? 'mão' : 'mãos'}
+                    </button>
+                  )}
+
                   <div className="sidebarPanel">
                     <div className="sidebarPanelRow">
                       <span className="sidebarPanelLabel">Valores</span>
@@ -263,6 +297,15 @@ export default function App() {
                         onClick={() => setShowVillainCards(v => !v)}
                       >
                         {showVillainCards ? 'Todas' : 'Hero'}
+                      </button>
+                    </div>
+                    <div className="sidebarPanelRow">
+                      <span className="sidebarPanelLabel">Resultado</span>
+                      <button
+                        className={`sidebarPanelBtn${showResult ? ' sidebarPanelBtnActive' : ''}`}
+                        onClick={() => setShowResult(v => !v)}
+                      >
+                        {showResult ? 'Visível' : 'Oculto'}
                       </button>
                     </div>
                     <div className="sidebarPanelRow">

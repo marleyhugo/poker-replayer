@@ -137,26 +137,44 @@ function parseAmount888New(s: string): number {
 }
 
 /**
- * Normaliza carta no formato 888poker brasileiro.
- * Suits: e=espadas(s), c=copas(h), o=ouros(d), p=paus(c)
- * Ranks: D=Dez(T/10)
+ * Normaliza carta no formato 888poker.
+ * Suporta:
+ *   - Notação padrão (inglês): h=hearts, d=diamonds, c=clubs, s=spades
+ *   - Notação pt-BR: e=espadas(s), o=ouros(d), p=paus(c)
+ *   - Rank '10' → 'T'
+ *
+ * Nota: 'c' é ambíguo (clubs em inglês, copas em pt-BR).
+ * Apenas aplica mapeamento pt-BR quando detecta suits exclusivamente pt-BR (e, o, p).
  */
-function normalize888Card(card: string): string {
+function normalize888Card(card: string, usePtBR: boolean): string {
   let c = card.trim();
   if (c.length < 2) return c;
-  // Rank: D → T (Dez = 10)
-  c = c.replace(/^D(?=[echops])/i, 'T');
   c = c.replace('10', 'T');
-  // Suit: último caractere
-  const suit = c[c.length - 1];
-  const suitMap: Record<string, string> = { e: 's', c: 'h', o: 'd', p: 'c' };
-  if (suitMap[suit]) c = c.slice(0, -1) + suitMap[suit];
+  if (usePtBR) {
+    c = c.replace(/^D(?=[echops])/i, 'T');
+    const suit = c[c.length - 1];
+    const suitMap: Record<string, string> = { e: 's', c: 'h', o: 'd', p: 'c' };
+    if (suitMap[suit]) c = c.slice(0, -1) + suitMap[suit];
+  }
   return c;
 }
 
-/** Extrai cartas separadas por vírgula e/ou espaço com normalização pt-BR. */
-function parseCards888New(s: string): string[] {
-  return s.split(/[,\s]+/).map(c => normalize888Card(c)).filter(c => c.length >= 2);
+/** Detecta se as cartas no HH usam notação pt-BR (presença de suits e, o, p). */
+function detectPtBRNotation(text: string): boolean {
+  const cardMatches = [...text.matchAll(/\[\s*([^\]]+)\s*\]/g)];
+  for (const [, content] of cardMatches) {
+    const cards = content.split(/[,\s]+/).filter(c => c.length >= 2);
+    for (const card of cards) {
+      const suit = card[card.length - 1];
+      if (suit === 'e' || suit === 'o' || suit === 'p') return true;
+    }
+  }
+  return false;
+}
+
+/** Extrai cartas separadas por vírgula e/ou espaço com normalização condicional. */
+function parseCards888New(s: string, usePtBR: boolean): string[] {
+  return s.split(/[,\s]+/).map(c => normalize888Card(c, usePtBR)).filter(c => c.length >= 2);
 }
 
 /** Converte linha de ação do novo formato 888poker em RawAction (verbos lowercase, valores em colchetes). */
@@ -174,6 +192,7 @@ function parseLineNew(line: string): RawAction | null {
 
 function parse888PokerNew(text: string): ParsedHand {
   const lines = text.split('\n').map(l => l.trim());
+  const usePtBR = detectPtBRNotation(text);
 
   // ID: "#Game No : 738293395"
   const id = lines[0].match(/#Game No\s*:\s*(\d+)/)?.[1] ?? '0';
@@ -209,14 +228,14 @@ function parse888PokerNew(text: string): ParsedHand {
     const dealt = line.match(/^Dealt to (.+?) \[ (.+?) \]/);
     if (dealt) {
       heroName = dealt[1];
-      const cards = parseCards888New(dealt[2]);
+      const cards = parseCards888New(dealt[2], usePtBR);
       if (cards.length >= 2) holeCards[dealt[1]] = [cards[0], cards[1]];
       continue;
     }
     // "Player shows [ Ah, 7c ]" ou "Player mucks [ Ad, Qh ]"
     const show = line.match(/^(.+?) (?:shows|mucks) \[ (.+?) \]/);
     if (show) {
-      const cards = parseCards888New(show[2]);
+      const cards = parseCards888New(show[2], usePtBR);
       if (cards.length >= 2) holeCards[show[1]] = [cards[0], cards[1]];
     }
   }
@@ -236,21 +255,21 @@ function parse888PokerNew(text: string): ParsedHand {
     // Flop: "** Dealing flop ** [ Kh, Qs, 5h ]"
     if (line.startsWith('** Dealing flop **')) {
       const m = line.match(/\[ (.+?) \]/);
-      const board = m ? parseCards888New(m[1]) : [];
+      const board = m ? parseCards888New(m[1], usePtBR) : [];
       transitionStreet(machine, streets, 'flop', board);
       continue;
     }
     // Turn: "** Dealing turn ** [ Jd ]"
     if (line.startsWith('** Dealing turn **')) {
       const m = line.match(/\[ (.+?) \]/);
-      const newCard = m ? parseCards888New(m[1])[0] : undefined;
+      const newCard = m ? parseCards888New(m[1], usePtBR)[0] : undefined;
       transitionStreet(machine, streets, 'turn', newCard ? [...machine.board, newCard] : machine.board);
       continue;
     }
     // River: "** Dealing river ** [ 3h ]"
     if (line.startsWith('** Dealing river **')) {
       const m = line.match(/\[ (.+?) \]/);
-      const newCard = m ? parseCards888New(m[1])[0] : undefined;
+      const newCard = m ? parseCards888New(m[1], usePtBR)[0] : undefined;
       transitionStreet(machine, streets, 'river', newCard ? [...machine.board, newCard] : machine.board);
       continue;
     }

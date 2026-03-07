@@ -52,6 +52,8 @@ export interface ParsedHand {
   holeCards: Record<string, [Card, Card]>;
   streets: StreetData[];
   winners: { player: string; amount: number; description?: string }[];
+  /** Texto original do hand history (usado para exportação). */
+  rawText: string;
 }
 
 // ─── Estado do jogo (engine) ───────────────────────────────────────────────────

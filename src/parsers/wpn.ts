@@ -124,31 +124,35 @@ export function parseWPN(text: string): ParsedHand {
 
     if (!inAction) continue;
 
+    // Linhas informativas — ignorar
+    if (/^Main pot /i.test(line) || /^Uncalled bet/i.test(line) || /does not show/i.test(line)) continue;
+
     const action = parseLine(line);
     if (action) machine.actions.push(action);
   }
 
-  // Winners — captura antes da SUMMARY para evitar duplicatas com linhas do summary
+  // Winners — fonte primária: antes da SUMMARY
   const winners: ParsedHand['winners'] = [];
   for (const line of lines) {
     if (/^\*\*\* SUMMARY \*\*\*|^-{3,} Summary|^Summary|^SUMMARY/i.test(line)) break;
     const wins = line.match(/^(.+?)\s+wins \$?([\d,.]+)/i);
     if (wins) { addWinner(winners, wins[1], parseAmount(wins[2])); continue; }
-    const col = line.match(/^(.+?)\s+collected \$?([\d,.]+)/i);
+    const col = line.match(/^(.+?)\s+collected \$?([\d,.]+)\s+from/i);
     if (col) { addWinner(winners, col[1], parseAmount(col[2])); continue; }
-    // "samuelgoes did not show and won 26400.00"
-    const won = line.match(/^(.+?)\s+did not show and won \$?([\d,.]+)/i);
-    if (won) addWinner(winners, won[1], parseAmount(won[2]));
   }
 
-  // Fallback: extrai da seção SUMMARY se nenhum winner encontrado acima
+  // Fallback: seção SUMMARY — "did not show and won", "showed and won", "collected"
   if (winners.length === 0) {
     let inSummary = false;
     for (const line of lines) {
       if (/^\*\*\* SUMMARY \*\*\*|^-{3,} Summary|^Summary|^SUMMARY/i.test(line)) { inSummary = true; continue; }
       if (!inSummary) continue;
-      const m = line.match(/^Seat \d+: (.+?) .*(?:collected|won) \$?([\d,.]+)/);
-      if (m) addWinner(winners, m[1].trim(), parseAmount(m[2]));
+      const didNotShow = line.match(/^Seat \d+: (.+?) did not show and won \$?([\d,.]+)/);
+      if (didNotShow) { addWinner(winners, didNotShow[1].trim(), parseAmount(didNotShow[2])); continue; }
+      const showed = line.match(/^Seat \d+: (.+?) (?:\(.+?\) )?showed .+ and won \$?([\d,.]+)/);
+      if (showed) { addWinner(winners, showed[1].replace(/\s*\((?:button|small blind|big blind)\)\s*$/i, '').trim(), parseAmount(showed[2])); continue; }
+      const colSeat = line.match(/^Seat \d+: (.+?) (?:\(.+?\) )?collected \$?([\d,.]+)/);
+      if (colSeat) addWinner(winners, colSeat[1].replace(/\s*\((?:button|small blind|big blind)\)\s*$/i, '').trim(), parseAmount(colSeat[2]));
     }
   }
 

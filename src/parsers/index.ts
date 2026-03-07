@@ -14,10 +14,10 @@ import { validateHand } from './validate';
 export function detectFormat(text: string): string {
   if (text.includes('PokerStars Hand #') || text.includes('PokerStars Game #')) return 'pokerstars';
   if (/Poker Hand #[A-Z]{2}/.test(text) || text.includes('GGPoker') || text.includes('Natural8')) return 'ggpoker';
-  if (text.includes('888poker Hand History') || text.includes('Pacific Poker')) return '888poker';
+  if (/888poker Hand History/i.test(text) || text.includes('Pacific Poker')) return '888poker';
   if (/Game Hand #\d+/.test(text) || (/Game #\d+ (starts|-)/.test(text)) || text.includes('Winning Poker')) return 'wpn';
   if (text.includes('<game gamecode=') || text.includes('<gametype>Holdem')) return 'ipoker';
-  if (text.includes('Hand History For Game') || /Tourney Texas Holdem Game Table/i.test(text)) return 'partypoker';
+  if (/Hand History [Ff]or Game/.test(text) || /Tourney Texas Holdem Game Table/i.test(text)) return 'partypoker';
   // 888poker novo formato (sem header "888poker Hand History")
   if (text.includes('#Game No')) return '888poker';
   return 'unknown';
@@ -28,7 +28,7 @@ const HAND_SPLIT_PATTERNS: Record<string, RegExp> = {
   ggpoker:    /(?=^Poker Hand #)/m,
   '888poker': /(?=^(?:#Game No|Game \d+))/m,
   wpn:        /(?=^Game (?:Hand )?#\d+)/m,
-  partypoker: /(?=^\*{5} Hand History For Game)/m,
+  partypoker: /(?=^\*{5} Hand History [Ff]or Game)/m,
 };
 
 /** Divide um texto com múltiplas mãos em chunks individuais usando o padrão do formato. */
@@ -70,6 +70,7 @@ export function parseMultipleHands(text: string): ParsedHand[] {
   for (const chunk of chunks) {
     try {
       const hand = parser(chunk);
+      hand.rawText = chunk;
       validateHand(hand);
       hands.push(hand);
     } catch {

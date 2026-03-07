@@ -108,18 +108,25 @@ export function parsePokerStars(text: string): ParsedHand {
     if (action) machine.actions.push(action);
   }
 
-  // Vencedores — passagem única pela seção SUMMARY, deduplicação via addWinner
+  // Vencedores — fonte primária: "collected X from pot" (antes do SUMMARY, nome limpo)
   const winners: ParsedHand['winners'] = [];
-  let inSummary = false;
   for (const line of lines) {
-    if (line.startsWith('*** SUMMARY ***')) { inSummary = true; continue; }
-    if (!inSummary) continue;
-    // Ex: "PlayerX collected $1.00 from main pot"
+    if (line.startsWith('*** SUMMARY ***')) break;
     const col = line.match(/^(.+?) collected \$?([\d,.]+) from/);
-    if (col) { addWinner(winners, col[1], parseAmount(col[2])); continue; }
-    // Ex: "Seat N: Player collected ($X)" ou "showed [...] and won ($X)"
-    const seat = line.match(/^Seat \d+: (.+?) (?:collected|showed .+ and won) \(\$?([\d,.]+)\)/);
-    if (seat) addWinner(winners, seat[1].trim(), parseAmount(seat[2]));
+    if (col) addWinner(winners, col[1], parseAmount(col[2]));
+  }
+  // Fallback: seção SUMMARY — strip de posição (button/small blind/big blind) do nome
+  if (winners.length === 0) {
+    let inSummary = false;
+    for (const line of lines) {
+      if (line.startsWith('*** SUMMARY ***')) { inSummary = true; continue; }
+      if (!inSummary) continue;
+      const seat = line.match(/^Seat \d+: (.+?) (?:\(.+?\) )?(?:collected|showed .+ and won) \(\$?([\d,.]+)\)/);
+      if (seat) {
+        const name = seat[1].replace(/\s*\((?:button|small blind|big blind|big blind\/ante)\)\s*$/i, '').trim();
+        addWinner(winners, name, parseAmount(seat[2]));
+      }
+    }
   }
 
   return { id, format: 'pokerstars', date, stakes, tableType: isTournament ? 'tournament' : 'cash', players, dealerSeat, heroName, holeCards, streets, winners };
